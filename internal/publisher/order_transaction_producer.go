@@ -1,0 +1,143 @@
+package msgqueue
+
+import (
+	"context"
+	"github.com/gofiber/fiber/v2/log"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"latipe-transaction-service/config"
+	"latipe-transaction-service/internal/domain/message"
+
+	"time"
+)
+
+type OrderOrchestratorPub struct {
+	channel *amqp.Channel
+	cfg     *config.Config
+}
+
+func NewOrderOrchestratorPub(cfg *config.Config) *OrderOrchestratorPub {
+	conn, err := amqp.Dial(cfg.RabbitMQ.Connection)
+	failOnError(err, "Failed to connect to RabbitMQ")
+	log.Info("producer has been connected")
+
+	producer := OrderOrchestratorPub{
+		cfg: cfg,
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		failOnError(err, "Failed to open a channel")
+		return nil
+	}
+	producer.channel = ch
+
+	return &producer
+}
+
+func (pub *OrderOrchestratorPub) PublishPurchaseProductMessage(message *message.OrderProductMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) PublishPurchasePromotionMessage(message *message.VoucherMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) PublishPurchaseDeliveryMessage(message *message.DeliveryMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) PublishPurchaseEmailMessage(message *message.EmailPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}

@@ -1,0 +1,96 @@
+Server:
+  KeyID: ordvn
+  Name: "Order Service APIs"
+  AppVersion: 1.0.0
+  ApiHeaderKey: ccfe5596a56098c7a38b06dc42d0ec409bbab643bce1ea4007b4201d26fd056d
+  BaseURI: 127.0.0.1:5000
+  Port: :5000
+  Mode: local
+  ReadTimeout: 5s
+  WriteTimeout: 5s
+  SSL: true
+  CtxDefaultTimeout: 5
+  ExpirationLimitTime: 30s
+DB:
+  Mongodb:
+    Address:
+    Username:
+    Password:
+    DbName:
+    ConnectTimeout:
+    MaxConnIdleTime:
+    MinPoolSize:
+    MaxPoolSize:
+
+RabbitMQ:
+  Connection: amqp://guest:guest@host.docker.internal:5672/
+  ConsumerName: orders_service_v2
+  ProducerName: orders_service_v2
+
+  OrderTransactionExchange: order_transaction_ex
+  OrderCommitRoutingKey: order.create
+
+
+  SagaOrderEvent:
+    Exchange: order_transaction_ex
+    PublishRoutingKey: order.transaction.commit
+    SubscriberRoutingKey: order.transaction.reply
+
+  SagaOrderProductEvent:
+    Exchange: order_transaction_ex
+    CommitRoutingKey: order.product.update
+    RollbackRoutingKey: order.product.rollback
+    ReplyRoutingKey: product.quantity.reply
+    Queue:
+
+  SagaOrderPaymentEvent:
+    Exchange: order_transaction_ex
+    CommitRoutingKey: order.payment.create
+    RollbackRoutingKey: order.payment.rollback
+    ReplyRoutingKey: order.payment.reply
+    Queue:
+
+  SagaOrderPromotionEvent:
+    Exchange: order_transaction_ex
+    CommitRoutingKey: order.promotion.update
+    RollbackRoutingKey: order.promotion.rollback
+    ReplyRoutingKey: order.promotion.reply
+    Queue:
+
+  SagaOrderDeliveryEvent:
+    Exchange: order_transaction_ex
+    CommitRoutingKey: order.delivery.create
+    RollbackRoutingKey: order.delivery.rollback
+    ReplyRoutingKey: order.delivery.reply
+    Queue:
+
+  SagaOrderEmailEvent:
+    Exchange: order_transaction_ex
+    CommitRoutingKey: order.email.create
+    RollbackRoutingKey: order.email.rollback
+    ReplyRoutingKey: order.email.reply
+    Queue:
+
+
+AdapterService:
+  AuthService:
+    BaseURL: http://localhost:8081
+    InternalKey:
+  UserService:
+    UserURL: http://localhost:8181
+    InternalKey:
+  ProductService:
+    BaseURL: http://localhost:8645
+    InternalKey: fsf1AQOu6TVn+gNyjv22v9Cu/lW3HDF8QsSweKl5R6Me+rDO2Twyqkdbr8lZpRXkPL0MAcMA8AtgTrJAmSV5yA==
+  StoreService:
+    BaseURL: http://localhost:8118
+    InternalKey:
+  EmailService:
+    BaseURL: http://localhost:8181
+    InternalKey:
+  DeliveryService:
+    BaseURL: http://localhost:5005
+    InternalKey:
+  PromotionService:
+    BaseURL: http://localhost:5010
+    InternalKey:
