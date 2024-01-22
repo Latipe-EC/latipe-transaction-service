@@ -1,10 +1,9 @@
 Server:
   KeyID: ordvn
-  Name: "Order Service APIs"
+  Name: "Transaction service"
   AppVersion: 1.0.0
-  ApiHeaderKey: ccfe5596a56098c7a38b06dc42d0ec409bbab643bce1ea4007b4201d26fd056d
   BaseURI: 127.0.0.1:5000
-  Port: :5000
+  Port: :5005
   Mode: local
   ReadTimeout: 5s
   WriteTimeout: 5s
@@ -13,14 +12,14 @@ Server:
   ExpirationLimitTime: 30s
 DB:
   Mongodb:
-    Address:
-    Username:
-    Password:
-    DbName:
-    ConnectTimeout:
+    Connection: mongodb://localhost:27017
+    DbName: latipe_transaction_db
+    Username: root
+    Password: 123123
+    ConnectTimeout: 10
     MaxConnIdleTime:
     MinPoolSize:
-    MaxPoolSize:
+    MaxPoolSize: 20
 
 RabbitMQ:
   Connection: amqp://guest:guest@host.docker.internal:5672/

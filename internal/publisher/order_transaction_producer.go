@@ -1,4 +1,4 @@
-package msgqueue
+package publisher
 
 import (
 	"context"

@@ -18,7 +18,7 @@ func NewTransactionRepository(client *mongodb.MongoClient) TransactionRepository
 	return &transactionRepository{transCollection: col}
 }
 
-func (t transactionRepository) CreateTransactionData(ctx context.Context, dao *entities.TransactionLog) error {
+func (t *transactionRepository) CreateTransactionData(ctx context.Context, dao *entities.TransactionLog) error {
 	dao.CreatedAt = time.Now()
 
 	_, err := t.transCollection.InsertOne(ctx, dao)
@@ -28,7 +28,7 @@ func (t transactionRepository) CreateTransactionData(ctx context.Context, dao *e
 	return nil
 }
 
-func (t transactionRepository) FindByOrderID(ctx context.Context, orderID string) (*entities.TransactionLog, error) {
+func (t *transactionRepository) FindByOrderID(ctx context.Context, orderID string) (*entities.TransactionLog, error) {
 	var entity entities.TransactionLog
 	filter := bson.M{"order_id": orderID}
 
@@ -40,7 +40,7 @@ func (t transactionRepository) FindByOrderID(ctx context.Context, orderID string
 	return &entity, err
 }
 
-func (t transactionRepository) UpdateTransaction(ctx context.Context, dao *entities.TransactionLog) error {
+func (t *transactionRepository) UpdateTransaction(ctx context.Context, dao *entities.TransactionLog) error {
 	//TODO implement me
 	panic("implement me")
 }

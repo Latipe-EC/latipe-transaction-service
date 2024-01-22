@@ -7,40 +7,36 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"latipe-transaction-service/config"
-	"time"
 )
 
 type MongoClient struct {
 	client  *mongo.Client
 	rootCtx context.Context
+	cfg     *config.Config
 }
 
 // Open - creates a new Mongo
 func OpenMongoDBConnection(cfg *config.Config) (*MongoClient, error) {
 	ctx := context.Background()
 
-	if cfg.DB.Mongodb.ConnectTimeout == 0 {
-		cfg.DB.Mongodb.ConnectTimeout = 15 * time.Second
-	}
-
 	client, err := mongo.Connect(ctx,
 		options.Client().ApplyURI(cfg.DB.Mongodb.Connection).
+			SetAuth(options.Credential{
+				Username: cfg.DB.Mongodb.Username,
+				Password: cfg.DB.Mongodb.Password,
+			}).
 			SetConnectTimeout(cfg.DB.Mongodb.ConnectTimeout).
 			SetMaxPoolSize(cfg.DB.Mongodb.MaxPoolSize))
 	if err != nil {
 		return nil, err
 	}
 
-	if err := client.Ping(ctx, nil); err != nil {
-		return nil, err
-	}
-
-	return &MongoClient{client: client, rootCtx: ctx}, nil
+	return &MongoClient{client: client, rootCtx: ctx, cfg: cfg}, nil
 
 }
 
 func (m *MongoClient) GetDB() *mongo.Database {
-	db := m.client.Database("latipe_delivery_db")
+	db := m.client.Database(m.cfg.DB.Mongodb.DbName)
 	return db
 }
 

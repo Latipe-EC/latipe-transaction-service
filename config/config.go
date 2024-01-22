@@ -43,10 +43,9 @@ type DB struct {
 }
 
 type Mongodb struct {
-	Address         string
+	DbName          string
 	Username        string
 	Password        string
-	DbName          string
 	Connection      string
 	ConnectTimeout  time.Duration
 	MaxConnIdleTime int

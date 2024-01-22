@@ -1,0 +1,8 @@
+package orderserv
+
+const (
+	PRODUCT_SERVICE   = 1
+	PROMOTION_SERVICE = 2
+	DELIVERY_SERVICE  = 3
+	PAYMENT_SERVICE   = 4
+)
