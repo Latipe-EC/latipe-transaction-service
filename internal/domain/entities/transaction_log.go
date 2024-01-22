@@ -17,9 +17,10 @@ type TransactionLog struct {
 	TransactionStatus int                `json:"transaction_status" bson:"transaction_status"`
 	CreatedAt         time.Time          `json:"created_at" bson:"created_at"`
 	SuccessAt         time.Time          `json:"success_at" bson:"success_at"`
-	ProductCommit     int                `json:"product_commit" bson:"product_commit"`
-	PromotionCommit   int                `json:"promotion_commit" bson:"promotion_commit"`
-	DeliveryCommit    int                `json:"delivery_commit" bson:"delivery_commit"`
-	PaymentCommit     int                `json:"payment_commit" bson:"payment_commit"`
-	EmailCommit       int                `json:"email_commit" bson:"email_commit"`
+	Commits           []Commits          `json:"commits" bson:"commits"`
+}
+
+type Commits struct {
+	ServiceName string `json:"service_name" bson:"service_name"`
+	TxStatus    int    `json:"tx_status" bson:"tx_status"`
 }

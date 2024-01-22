@@ -18,9 +18,10 @@ import (
 )
 
 type Server struct {
-	app              *fiber.App
-	globalCfg        *config.Config
-	purchaseReplySub *subscriber.PurchaseReplySubscriber
+	app               *fiber.App
+	globalCfg         *config.Config
+	purchaseReplySub  *subscriber.PurchaseReplySubscriber
+	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber
 }
 
 func (serv Server) App() *fiber.App {
@@ -33,6 +34,10 @@ func (serv Server) Config() *config.Config {
 
 func (serv Server) PurchaseReplySub() *subscriber.PurchaseReplySubscriber {
 	return serv.purchaseReplySub
+}
+
+func (serv Server) PurchaseCreateSub() *subscriber.PurchaseCreateOrchestratorSubscriber {
+	return serv.purchaseCreateSub
 }
 
 func New() (*Server, error) {
@@ -49,7 +54,8 @@ func New() (*Server, error) {
 
 func NewServer(
 	cfg *config.Config,
-	purchaseReplySub *subscriber.PurchaseReplySubscriber) *Server {
+	purchaseReplySub *subscriber.PurchaseReplySubscriber,
+	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber) *Server {
 
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  cfg.Server.ReadTimeout,
@@ -77,8 +83,9 @@ func NewServer(
 	})
 
 	return &Server{
-		globalCfg:        cfg,
-		app:              app,
-		purchaseReplySub: purchaseReplySub,
+		globalCfg:         cfg,
+		app:               app,
+		purchaseReplySub:  purchaseReplySub,
+		purchaseCreateSub: purchaseCreateSub,
 	}
 }

@@ -6,3 +6,10 @@ const (
 	DELIVERY_SERVICE  = 3
 	PAYMENT_SERVICE   = 4
 )
+
+const (
+	PRODUCT_SERVICE_NAME   = "product_service"
+	PROMOTION_SERVICE_NAME = "promotion_service"
+	DELIVERY_SERVICE_NAME  = "delivery_service"
+	PAYMENT_SERVICE_NAME   = "payment_service"
+)

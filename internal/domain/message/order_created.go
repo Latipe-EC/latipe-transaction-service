@@ -1,19 +1,19 @@
 package message
 
 type OrderPendingMessage struct {
-	UserRequest      UserRequest         `json:"user_request,omitempty"`
+	UserRequest      UserRequest         `json:"user_request"`
 	Status           int                 `json:"status"`
-	OrderID          string              `json:"order_id,omitempty"`
-	Amount           int                 `json:"amount,omitempty" validate:"required"`
-	ShippingCost     int                 `json:"shipping_cost,omitempty"`
-	ShippingDiscount int                 `json:"shipping_discount,omitempty" validate:"required"`
-	ItemDiscount     int                 `json:"item_discount,omitempty" validate:"required"`
-	SubTotal         int                 `json:"sub_total,omitempty" validate:"required"`
-	PaymentMethod    int                 `json:"payment_method,omitempty" validate:"required"`
+	OrderID          string              `json:"order_id"`
+	Amount           int                 `json:"amount"`
+	ShippingCost     int                 `json:"shipping_cost"`
+	ShippingDiscount int                 `json:"shipping_discount"`
+	ItemDiscount     int                 `json:"item_discount"`
+	SubTotal         int                 `json:"sub_total"`
+	PaymentMethod    int                 `json:"payment_method" `
 	Vouchers         string              `json:"vouchers,omitempty"`
-	Address          OrderAddress        `json:"address,omitempty" validate:"required"`
-	Delivery         Delivery            `json:"delivery,omitempty" validate:"required"`
-	OrderItems       []OrderItemsMessage `json:"order_items,omitempty" validate:"required"`
+	Address          OrderAddress        `json:"address,omitempty" `
+	Delivery         Delivery            `json:"delivery,omitempty" `
+	OrderItems       []OrderItemsMessage `json:"order_items,omitempty"`
 }
 
 type UserRequest struct {

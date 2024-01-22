@@ -17,7 +17,7 @@ type PurchaseReplySubscriber struct {
 	orderServ orderserv.OrderService
 }
 
-func NewDeliverySubscriberReply(cfg *config.Config, orderServ orderserv.OrderService) *PurchaseReplySubscriber {
+func NewPurchaseSubscriberReply(cfg *config.Config, orderServ orderserv.OrderService) *PurchaseReplySubscriber {
 	return &PurchaseReplySubscriber{
 		config:    cfg,
 		orderServ: orderServ,

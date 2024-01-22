@@ -115,6 +115,33 @@ func (pub *OrderOrchestratorPub) PublishPurchaseDeliveryMessage(message *message
 	return nil
 }
 
+func (pub *OrderOrchestratorPub) PublishPurchasePaymentMessage(message *message.PaymentMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
 func (pub *OrderOrchestratorPub) PublishPurchaseEmailMessage(message *message.EmailPurchaseMessage) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -131,6 +158,141 @@ func (pub *OrderOrchestratorPub) PublishPurchaseEmailMessage(message *message.Em
 	err = pub.channel.PublishWithContext(ctx,
 		pub.cfg.RabbitMQ.SagaOrderEmailEvent.Exchange,
 		pub.cfg.RabbitMQ.SagaOrderEmailEvent.CommitRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) RollbackPurchaseProductMessage(message *message.RollbackPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.RollbackRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderProductEvent.RollbackRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) RollbackPurchasePromotionMessage(message *message.RollbackPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.RollbackRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPromotionEvent.RollbackRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) RollbackPurchaseDeliveryMessage(message *message.RollbackPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.RollbackRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderDeliveryEvent.RollbackRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) RollbackPurchaseEmailMessage(message *message.RollbackPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.RollbackRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEmailEvent.RollbackRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
+func (pub *OrderOrchestratorPub) RollbackPurchasePaymentMessage(message *message.RollbackPurchaseMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderPaymentEvent.CommitRoutingKey,
 		false, // mandatory
 		false, // immediate
 		amqp.Publishing{

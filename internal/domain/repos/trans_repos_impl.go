@@ -40,7 +40,20 @@ func (t *transactionRepository) FindByOrderID(ctx context.Context, orderID strin
 	return &entity, err
 }
 
-func (t *transactionRepository) UpdateTransaction(ctx context.Context, dao *entities.TransactionLog) error {
-	//TODO implement me
-	panic("implement me")
+func (t *transactionRepository) UpdateTransaction(ctx context.Context, dao *entities.TransactionLog, commit *entities.Commits) error {
+	filter := bson.M{"order_id": dao.OrderID, "commits.service_name": commit.ServiceName}
+
+	update := bson.D{
+		{"$set", bson.D{
+			{"transaction_status", dao.TransactionStatus},
+			{"commits.$.tx_status", commit.TxStatus},
+		}},
+	}
+
+	_, err := t.transCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		panic(err)
+	}
+
+	return nil
 }

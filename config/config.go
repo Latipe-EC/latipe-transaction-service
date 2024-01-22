@@ -79,11 +79,12 @@ type SagaOrderEvent struct {
 }
 
 type SagaOrderProductEvent struct {
-	Connection       string
-	Exchange         string
-	CommitRoutingKey string
-	ReplyRoutingKey  string
-	Queue            string
+	Connection         string
+	Exchange           string
+	CommitRoutingKey   string
+	RollbackRoutingKey string
+	ReplyRoutingKey    string
+	Queue              string
 }
 
 type SagaOrderPromotionEvent struct {

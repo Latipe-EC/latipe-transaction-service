@@ -18,17 +18,25 @@ func main() {
 
 	//subscriber
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go serv.PurchaseReplySub().ListenProductPurchaseReply(&wg)
+	//publish transaction
+	{
+		wg.Add(1)
+		go serv.PurchaseCreateSub().ListenProductPurchaseCreate(&wg)
+	}
+	//waiting reply
+	{
+		wg.Add(1)
+		go serv.PurchaseReplySub().ListenProductPurchaseReply(&wg)
 
-	wg.Add(1)
-	go serv.PurchaseReplySub().ListenPromotionPurchaseReply(&wg)
+		wg.Add(1)
+		go serv.PurchaseReplySub().ListenPromotionPurchaseReply(&wg)
 
-	wg.Add(1)
-	go serv.PurchaseReplySub().ListenPaymentPurchaseReply(&wg)
+		wg.Add(1)
+		go serv.PurchaseReplySub().ListenPaymentPurchaseReply(&wg)
 
-	wg.Add(1)
-	go serv.PurchaseReplySub().ListenDeliveryPurchaseReply(&wg)
+		wg.Add(1)
+		go serv.PurchaseReplySub().ListenDeliveryPurchaseReply(&wg)
+	}
 
 	//api handler
 	wg.Add(1)
