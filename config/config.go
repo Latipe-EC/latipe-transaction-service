@@ -18,6 +18,7 @@ type Config struct {
 	//Adapters Adapters
 	AdapterService AdapterService
 	RabbitMQ       RabbitMQ
+	CronJob        CronJob
 }
 
 type Server struct {
@@ -36,6 +37,10 @@ type Server struct {
 	Debug               bool
 	MaxCountRequest     int           // max count of connections
 	ExpirationLimitTime time.Duration //  expiration time of the limit
+}
+
+type CronJob struct {
+	CheckingTxStatus string
 }
 
 type DB struct {

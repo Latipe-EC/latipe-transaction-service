@@ -24,3 +24,12 @@ func MappingServiceName(serviceType int) string {
 	}
 	return ""
 }
+
+func IsCommitSuccess(commits []entities.Commits) bool {
+	for _, i := range commits {
+		if i.TxStatus != entities.TX_SUCCESS {
+			return false
+		}
+	}
+	return true
+}

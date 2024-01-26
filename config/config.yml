@@ -33,7 +33,7 @@ RabbitMQ:
   SagaOrderEvent:
     Exchange: order_transaction_ex
     PublishRoutingKey: order.transaction.commit
-    SubscriberRoutingKey: order.transaction.reply
+    ReplyRoutingKey: order.transaction.reply
 
   SagaOrderProductEvent:
     Exchange: order_transaction_ex
@@ -93,3 +93,6 @@ AdapterService:
   PromotionService:
     BaseURL: http://localhost:5010
     InternalKey:
+
+CronJob:
+  CheckingTxStatus: "@every 5m"

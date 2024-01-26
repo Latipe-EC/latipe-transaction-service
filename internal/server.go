@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/google/wire"
 	"latipe-transaction-service/config"
+	"latipe-transaction-service/internal/cronjob"
 	"latipe-transaction-service/internal/domain/repos"
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service"
@@ -22,6 +23,7 @@ type Server struct {
 	globalCfg         *config.Config
 	purchaseReplySub  *subscriber.PurchaseReplySubscriber
 	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber
+	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
 func (serv Server) App() *fiber.App {
@@ -40,6 +42,10 @@ func (serv Server) PurchaseCreateSub() *subscriber.PurchaseCreateOrchestratorSub
 	return serv.purchaseCreateSub
 }
 
+func (serv Server) CheckTxStatusCron() *cronjob.CheckingTxStatusCronJ {
+	return serv.checkTxStatus
+}
+
 func New() (*Server, error) {
 	panic(wire.Build(wire.NewSet(
 		NewServer,
@@ -49,13 +55,15 @@ func New() (*Server, error) {
 		service.Set,
 		subscriber.Set,
 		publisher.Set,
+		cronjob.Set,
 	)))
 }
 
 func NewServer(
 	cfg *config.Config,
 	purchaseReplySub *subscriber.PurchaseReplySubscriber,
-	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber) *Server {
+	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber,
+	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  cfg.Server.ReadTimeout,
@@ -87,5 +95,6 @@ func NewServer(
 		app:               app,
 		purchaseReplySub:  purchaseReplySub,
 		purchaseCreateSub: purchaseCreateSub,
+		checkTxStatus:     checkTxStatus,
 	}
 }

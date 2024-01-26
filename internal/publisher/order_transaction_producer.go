@@ -34,6 +34,33 @@ func NewOrderOrchestratorPub(cfg *config.Config) *OrderOrchestratorPub {
 	return &producer
 }
 
+func (pub *OrderOrchestratorPub) ReplyPurchaseMessage(message *message.CreateOrderReplyMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEvent.ReplyRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderEvent.ReplyRoutingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
 func (pub *OrderOrchestratorPub) PublishPurchaseProductMessage(message *message.OrderProductMessage) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

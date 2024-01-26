@@ -185,3 +185,26 @@ func (o orderService) rollbackPurchaseToService(dao *entities.Commits, orderId s
 
 	return nil
 }
+
+func (o orderService) CheckTransactionStatus(ctx context.Context) error {
+	txs, err := o.transactionRepo.FindAllPendingTransaction(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, i := range txs {
+		if IsCommitSuccess(i.Commits) {
+			replyMessage := message.CreateOrderReplyMessage{
+				Status:  entities.TX_SUCCESS,
+				OrderID: i.OrderID,
+			}
+
+			err := o.transactionOrchestrator.ReplyPurchaseMessage(&replyMessage)
+			if err != nil {
+				log.Errorf("publish tx order [%v] message was failed %v", i.OrderID, err)
+			}
+		}
+	}
+
+	return err
+}

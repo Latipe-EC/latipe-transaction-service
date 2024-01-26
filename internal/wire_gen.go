@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"latipe-transaction-service/config"
+	"latipe-transaction-service/internal/cronjob"
 	"latipe-transaction-service/internal/domain/repos"
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service/orderserv"
@@ -35,7 +36,9 @@ func New() (*Server, error) {
 	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub)
 	purchaseReplySubscriber := subscriber.NewPurchaseSubscriberReply(configConfig, orderService)
 	purchaseCreateOrchestratorSubscriber := subscriber.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService)
-	server := NewServer(configConfig, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber)
+	cron := cronjob.NewCronInstance()
+	checkingTxStatusCronJ := cronjob.NewCheckingTxStatusCronJ(configConfig, cron, orderService)
+	server := NewServer(configConfig, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, checkingTxStatusCronJ)
 	return server, nil
 }
 
@@ -46,6 +49,7 @@ type Server struct {
 	globalCfg         *config.Config
 	purchaseReplySub  *subscriber.PurchaseReplySubscriber
 	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber
+	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
 func (serv Server) App() *fiber.App {
@@ -64,10 +68,15 @@ func (serv Server) PurchaseCreateSub() *subscriber.PurchaseCreateOrchestratorSub
 	return serv.purchaseCreateSub
 }
 
+func (serv Server) CheckTxStatusCron() *cronjob.CheckingTxStatusCronJ {
+	return serv.checkTxStatus
+}
+
 func NewServer(
 	cfg *config.Config,
 	purchaseReplySub *subscriber.PurchaseReplySubscriber,
-	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber) *Server {
+	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber,
+	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  cfg.Server.ReadTimeout,
@@ -98,5 +107,6 @@ func NewServer(
 		app:               app,
 		purchaseReplySub:  purchaseReplySub,
 		purchaseCreateSub: purchaseCreateSub,
+		checkTxStatus:     checkTxStatus,
 	}
 }

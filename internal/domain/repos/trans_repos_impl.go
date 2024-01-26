@@ -57,3 +57,22 @@ func (t *transactionRepository) UpdateTransaction(ctx context.Context, dao *enti
 
 	return nil
 }
+
+func (t *transactionRepository) FindAllPendingTransaction(ctx context.Context) ([]*entities.TransactionLog, error) {
+	var txs []*entities.TransactionLog
+	filter := bson.M{
+		"created_at": bson.M{"$gt": time.Now()},
+		"status":     entities.TX_PENDING,
+	}
+
+	cursor, err := t.transCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.All(ctx, &txs); err != nil {
+		return nil, err
+	}
+
+	return txs, nil
+}
