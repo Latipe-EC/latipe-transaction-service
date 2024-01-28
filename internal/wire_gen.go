@@ -18,6 +18,7 @@ import (
 	"latipe-transaction-service/internal/service/orderserv"
 	"latipe-transaction-service/internal/subscriber"
 	"latipe-transaction-service/pkgs/db/mongodb"
+	"latipe-transaction-service/pkgs/rabbitclient"
 )
 
 // Injectors from server.go:
@@ -32,10 +33,11 @@ func New() (*Server, error) {
 		return nil, err
 	}
 	transactionRepository := repos.NewTransactionRepository(mongoClient)
-	orderOrchestratorPub := publisher.NewOrderOrchestratorPub(configConfig)
+	connection := rabbitclient.NewRabbitClientConnection(configConfig)
+	orderOrchestratorPub := publisher.NewOrderOrchestratorPub(configConfig, connection)
 	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub)
-	purchaseReplySubscriber := subscriber.NewPurchaseSubscriberReply(configConfig, orderService)
-	purchaseCreateOrchestratorSubscriber := subscriber.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService)
+	purchaseReplySubscriber := subscriber.NewPurchaseSubscriberReply(configConfig, orderService, connection)
+	purchaseCreateOrchestratorSubscriber := subscriber.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService, connection)
 	cron := cronjob.NewCronInstance()
 	checkingTxStatusCronJ := cronjob.NewCheckingTxStatusCronJ(configConfig, cron, orderService)
 	server := NewServer(configConfig, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, checkingTxStatusCronJ)

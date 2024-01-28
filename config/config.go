@@ -67,9 +67,8 @@ type RabbitMQ struct {
 	SagaOrderEmailEvent     SagaOrderEmailEvent
 	SagaOrderCartEvent      SagaOrderCartEvent
 
-	Connection   string
-	ConsumerName string
-	ProducerName string
+	Connection  string
+	ServiceName string
 
 	OrderTransactionExchange string
 	OrderCommitRoutingKey    string

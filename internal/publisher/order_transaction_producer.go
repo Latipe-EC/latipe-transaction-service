@@ -15,11 +15,7 @@ type OrderOrchestratorPub struct {
 	cfg     *config.Config
 }
 
-func NewOrderOrchestratorPub(cfg *config.Config) *OrderOrchestratorPub {
-	conn, err := amqp.Dial(cfg.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Info("producer has been connected")
-
+func NewOrderOrchestratorPub(cfg *config.Config, conn *amqp.Connection) *OrderOrchestratorPub {
 	producer := OrderOrchestratorPub{
 		cfg: cfg,
 	}

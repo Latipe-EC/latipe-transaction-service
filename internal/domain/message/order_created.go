@@ -39,7 +39,12 @@ type ProductItem struct {
 }
 
 type OrderAddress struct {
-	AddressId string `json:"address_id"`
+	Name          string `json:"name"`
+	Phone         string `json:"phone"`
+	AddressDetail string `json:"address_detail"`
+	ProvinceCode  string `json:"province_code"`
+	DistrictCode  string `json:"district_code"`
+	WardCode      string `json:"ward_code"`
 }
 
 type Delivery struct {

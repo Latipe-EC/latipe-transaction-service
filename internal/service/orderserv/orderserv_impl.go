@@ -79,11 +79,19 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	go sendMessage(func() error {
 		deliveryMsg := message.DeliveryMessage{
 			OrderID:       msg.OrderID,
-			Name:          msg.Delivery.Name,
-			Cost:          msg.Delivery.Cost,
-			ReceivingDate: msg.Delivery.ReceivingDate,
-			AddressId:     msg.Address.AddressId,
+			DeliveryID:    msg.Delivery.DeliveryId,
+			PaymentMethod: msg.PaymentMethod,
+			Total:         msg.Amount,
+			ShippingCost:  msg.ShippingCost,
+			ReceiveDate:   msg.Delivery.ReceivingDate,
 		}
+
+		deliveryMsg.Address.Name = msg.Address.Name
+		deliveryMsg.Address.AddressDetail = msg.Address.AddressDetail
+		deliveryMsg.Address.DistrictCode = msg.Address.DistrictCode
+		deliveryMsg.Address.ProvinceCode = msg.Address.ProvinceCode
+		deliveryMsg.Address.WardCode = msg.Address.WardCode
+		deliveryMsg.Address.Phone = msg.Address.Phone
 		return o.transactionOrchestrator.PublishPurchaseDeliveryMessage(&deliveryMsg)
 	})
 

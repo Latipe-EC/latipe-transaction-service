@@ -15,23 +15,21 @@ import (
 type PurchaseReplySubscriber struct {
 	config    *config.Config
 	orderServ orderserv.OrderService
+	conn      *amqp.Connection
 }
 
-func NewPurchaseSubscriberReply(cfg *config.Config, orderServ orderserv.OrderService) *PurchaseReplySubscriber {
+func NewPurchaseSubscriberReply(cfg *config.Config, orderServ orderserv.OrderService,
+	conn *amqp.Connection) *PurchaseReplySubscriber {
 	return &PurchaseReplySubscriber{
 		config:    cfg,
 		orderServ: orderServ,
+		conn:      conn,
 	}
 }
 
 func (mq PurchaseReplySubscriber) ListenProductPurchaseReply(wg *sync.WaitGroup) {
-	conn, err := amqp.Dial(mq.config.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Infof("[%v] has been connected", mq.config.RabbitMQ.SagaOrderProductEvent.ReplyRoutingKey)
-
-	channel, err := conn.Channel()
+	channel, err := mq.conn.Channel()
 	defer channel.Close()
-	defer conn.Close()
 
 	// define an exchange type "topic"
 	err = channel.ExchangeDeclare(
@@ -72,13 +70,13 @@ func (mq PurchaseReplySubscriber) ListenProductPurchaseReply(wg *sync.WaitGroup)
 
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
-		q.Name,                          // queue
-		mq.config.RabbitMQ.ConsumerName, // consumer
-		true,                            // auto ack
-		false,                           // exclusive
-		false,                           // no local
-		false,                           // no wait
-		nil,                             //args
+		q.Name,                         // queue
+		mq.config.RabbitMQ.ServiceName, // consumer
+		true,                           // auto ack
+		false,                          // exclusive
+		false,                          // no local
+		false,                          // no wait
+		nil,                            //args
 	)
 	if err != nil {
 		panic(err)
@@ -98,13 +96,8 @@ func (mq PurchaseReplySubscriber) ListenProductPurchaseReply(wg *sync.WaitGroup)
 }
 
 func (mq PurchaseReplySubscriber) ListenPromotionPurchaseReply(wg *sync.WaitGroup) {
-	conn, err := amqp.Dial(mq.config.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Infof("[%v] has been connected", mq.config.RabbitMQ.SagaOrderPromotionEvent.ReplyRoutingKey)
-
-	channel, err := conn.Channel()
+	channel, err := mq.conn.Channel()
 	defer channel.Close()
-	defer conn.Close()
 
 	// define an exchange type "topic"
 	err = channel.ExchangeDeclare(
@@ -145,13 +138,13 @@ func (mq PurchaseReplySubscriber) ListenPromotionPurchaseReply(wg *sync.WaitGrou
 
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
-		q.Name,                          // queue
-		mq.config.RabbitMQ.ConsumerName, // consumer
-		true,                            // auto ack
-		false,                           // exclusive
-		false,                           // no local
-		false,                           // no wait
-		nil,                             //args
+		q.Name,                         // queue
+		mq.config.RabbitMQ.ServiceName, // consumer
+		true,                           // auto ack
+		false,                          // exclusive
+		false,                          // no local
+		false,                          // no wait
+		nil,                            //args
 	)
 	if err != nil {
 		panic(err)
@@ -171,13 +164,8 @@ func (mq PurchaseReplySubscriber) ListenPromotionPurchaseReply(wg *sync.WaitGrou
 }
 
 func (mq PurchaseReplySubscriber) ListenDeliveryPurchaseReply(wg *sync.WaitGroup) {
-	conn, err := amqp.Dial(mq.config.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Infof("[%v] has been connected", mq.config.RabbitMQ.SagaOrderDeliveryEvent.ReplyRoutingKey)
-
-	channel, err := conn.Channel()
+	channel, err := mq.conn.Channel()
 	defer channel.Close()
-	defer conn.Close()
 
 	// define an exchange type "topic"
 	err = channel.ExchangeDeclare(
@@ -218,13 +206,13 @@ func (mq PurchaseReplySubscriber) ListenDeliveryPurchaseReply(wg *sync.WaitGroup
 
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
-		q.Name,                          // queue
-		mq.config.RabbitMQ.ConsumerName, // consumer
-		true,                            // auto ack
-		false,                           // exclusive
-		false,                           // no local
-		false,                           // no wait
-		nil,                             //args
+		q.Name,                         // queue
+		mq.config.RabbitMQ.ServiceName, // consumer
+		true,                           // auto ack
+		false,                          // exclusive
+		false,                          // no local
+		false,                          // no wait
+		nil,                            //args
 	)
 	if err != nil {
 		panic(err)
@@ -244,13 +232,8 @@ func (mq PurchaseReplySubscriber) ListenDeliveryPurchaseReply(wg *sync.WaitGroup
 }
 
 func (mq PurchaseReplySubscriber) ListenPaymentPurchaseReply(wg *sync.WaitGroup) {
-	conn, err := amqp.Dial(mq.config.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Infof("[%v] has been connected", mq.config.RabbitMQ.SagaOrderPaymentEvent.ReplyRoutingKey)
-
-	channel, err := conn.Channel()
+	channel, err := mq.conn.Channel()
 	defer channel.Close()
-	defer conn.Close()
 
 	// define an exchange type "topic"
 	err = channel.ExchangeDeclare(
@@ -291,13 +274,13 @@ func (mq PurchaseReplySubscriber) ListenPaymentPurchaseReply(wg *sync.WaitGroup)
 
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
-		q.Name,                          // queue
-		mq.config.RabbitMQ.ConsumerName, // consumer
-		true,                            // auto ack
-		false,                           // exclusive
-		false,                           // no local
-		false,                           // no wait
-		nil,                             //args
+		q.Name,                         // queue
+		mq.config.RabbitMQ.ServiceName, // consumer
+		true,                           // auto ack
+		false,                          // exclusive
+		false,                          // no local
+		false,                          // no wait
+		nil,                            //args
 	)
 	if err != nil {
 		panic(err)

@@ -16,6 +16,7 @@ import (
 	"latipe-transaction-service/internal/service"
 	"latipe-transaction-service/internal/subscriber"
 	"latipe-transaction-service/pkgs/db/mongodb"
+	"latipe-transaction-service/pkgs/rabbitclient"
 )
 
 type Server struct {
@@ -51,6 +52,7 @@ func New() (*Server, error) {
 		NewServer,
 		config.Set,
 		mongodb.Set,
+		rabbitclient.Set,
 		repos.Set,
 		service.Set,
 		subscriber.Set,

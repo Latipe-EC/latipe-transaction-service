@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	server "latipe-transaction-service/internal"
+	"runtime"
 	"sync"
 )
 
 func main() {
 	fmt.Println("Init application")
-	defer log.Fatalf("[Info] Application has closed")
+	// Get the number of CPU cores
+	numCPU := runtime.NumCPU()
+	fmt.Printf("Number of CPU cores: %d\n", numCPU)
 
 	serv, err := server.New()
 	if err != nil {
@@ -23,6 +26,7 @@ func main() {
 	startAPIHandler(serv, &wg)
 
 	wg.Wait()
+	log.Fatal("Application has closed")
 }
 
 func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
@@ -58,6 +62,8 @@ func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 }
 
 func startCronJobs(serv *server.Server, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -69,6 +75,8 @@ func startCronJobs(serv *server.Server, wg *sync.WaitGroup) {
 }
 
 func startAPIHandler(serv *server.Server, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

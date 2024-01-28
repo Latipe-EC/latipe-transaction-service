@@ -15,24 +15,21 @@ import (
 type PurchaseCreateOrchestratorSubscriber struct {
 	config    *config.Config
 	orderServ orderserv.OrderService
+	conn      *amqp.Connection
 }
 
 func NewPurchaseCreateOrchestratorSubscriber(cfg *config.Config,
-	orderServ orderserv.OrderService) *PurchaseCreateOrchestratorSubscriber {
+	orderServ orderserv.OrderService, conn *amqp.Connection) *PurchaseCreateOrchestratorSubscriber {
 	return &PurchaseCreateOrchestratorSubscriber{
 		config:    cfg,
 		orderServ: orderServ,
+		conn:      conn,
 	}
 }
 
 func (orch PurchaseCreateOrchestratorSubscriber) ListenProductPurchaseCreate(wg *sync.WaitGroup) {
-	conn, err := amqp.Dial(orch.config.RabbitMQ.Connection)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	log.Infof("[%v] has been connected", orch.config.RabbitMQ.SagaOrderEvent.PublishRoutingKey)
-
-	channel, err := conn.Channel()
+	channel, err := orch.conn.Channel()
 	defer channel.Close()
-	defer conn.Close()
 
 	// define an exchange type "topic"
 	err = channel.ExchangeDeclare(
@@ -73,13 +70,13 @@ func (orch PurchaseCreateOrchestratorSubscriber) ListenProductPurchaseCreate(wg 
 
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
-		q.Name,                            // queue
-		orch.config.RabbitMQ.ConsumerName, // consumer
-		true,                              // auto ack
-		false,                             // exclusive
-		false,                             // no local
-		false,                             // no wait
-		nil,                               //args
+		q.Name,                           // queue
+		orch.config.RabbitMQ.ServiceName, // consumer
+		true,                             // auto ack
+		false,                            // exclusive
+		false,                            // no local
+		false,                            // no wait
+		nil,                              //args
 	)
 	if err != nil {
 		panic(err)
