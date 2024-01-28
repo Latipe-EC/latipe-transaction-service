@@ -3,7 +3,7 @@ Server:
   Name: "Transaction service"
   AppVersion: 1.0.0
   BaseURI: 127.0.0.1:5000
-  Port: :5005
+  Port: :5020
   Mode: local
   ReadTimeout: 5s
   WriteTimeout: 5s
