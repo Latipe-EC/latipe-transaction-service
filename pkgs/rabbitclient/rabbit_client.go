@@ -21,3 +21,9 @@ func NewRabbitClientConnection(globalCfg *config.Config) *amqp.Connection {
 	log.Info("Comsumer has been connected")
 	return conn
 }
+
+func FailOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}

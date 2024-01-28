@@ -15,6 +15,7 @@ import (
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service"
 	"latipe-transaction-service/internal/subscriber"
+	"latipe-transaction-service/internal/subscriber/createPurchase"
 	"latipe-transaction-service/pkgs/db/mongodb"
 	"latipe-transaction-service/pkgs/rabbitclient"
 )
@@ -22,8 +23,8 @@ import (
 type Server struct {
 	app               *fiber.App
 	globalCfg         *config.Config
-	purchaseReplySub  *subscriber.PurchaseReplySubscriber
-	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber
+	purchaseReplySub  *createPurchase.PurchaseReplySubscriber
+	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber
 	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
@@ -35,11 +36,11 @@ func (serv Server) Config() *config.Config {
 	return serv.globalCfg
 }
 
-func (serv Server) PurchaseReplySub() *subscriber.PurchaseReplySubscriber {
+func (serv Server) PurchaseReplySub() *createPurchase.PurchaseReplySubscriber {
 	return serv.purchaseReplySub
 }
 
-func (serv Server) PurchaseCreateSub() *subscriber.PurchaseCreateOrchestratorSubscriber {
+func (serv Server) PurchaseCreateSub() *createPurchase.PurchaseCreateOrchestratorSubscriber {
 	return serv.purchaseCreateSub
 }
 
@@ -63,8 +64,8 @@ func New() (*Server, error) {
 
 func NewServer(
 	cfg *config.Config,
-	purchaseReplySub *subscriber.PurchaseReplySubscriber,
-	purchaseCreateSub *subscriber.PurchaseCreateOrchestratorSubscriber,
+	purchaseReplySub *createPurchase.PurchaseReplySubscriber,
+	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber,
 	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{

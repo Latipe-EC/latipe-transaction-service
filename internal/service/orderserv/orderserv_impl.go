@@ -6,7 +6,7 @@ import (
 	"latipe-transaction-service/internal/domain/entities"
 	"latipe-transaction-service/internal/domain/message"
 	"latipe-transaction-service/internal/domain/repos"
-	msgqueue "latipe-transaction-service/internal/publisher"
+	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
 	"strings"
 	"time"
 )

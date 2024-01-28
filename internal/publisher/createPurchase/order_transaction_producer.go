@@ -1,4 +1,4 @@
-package publisher
+package createPurchase
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/domain/message"
+	"latipe-transaction-service/pkgs/rabbitclient"
 
 	"time"
 )
@@ -22,7 +23,7 @@ func NewOrderOrchestratorPub(cfg *config.Config, conn *amqp.Connection) *OrderOr
 
 	ch, err := conn.Channel()
 	if err != nil {
-		failOnError(err, "Failed to open a channel")
+		rabbitclient.FailOnError(err, "Failed to open a channel")
 		return nil
 	}
 	producer.channel = ch
@@ -52,7 +53,7 @@ func (pub *OrderOrchestratorPub) ReplyPurchaseMessage(message *message.CreateOrd
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -79,7 +80,7 @@ func (pub *OrderOrchestratorPub) PublishPurchaseProductMessage(message *message.
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -106,7 +107,7 @@ func (pub *OrderOrchestratorPub) PublishPurchasePromotionMessage(message *messag
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -133,7 +134,7 @@ func (pub *OrderOrchestratorPub) PublishPurchaseDeliveryMessage(message *message
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -160,7 +161,7 @@ func (pub *OrderOrchestratorPub) PublishPurchasePaymentMessage(message *message.
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -187,7 +188,7 @@ func (pub *OrderOrchestratorPub) PublishPurchaseEmailMessage(message *message.Em
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -214,7 +215,7 @@ func (pub *OrderOrchestratorPub) RollbackPurchaseProductMessage(message *message
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -241,7 +242,7 @@ func (pub *OrderOrchestratorPub) RollbackPurchasePromotionMessage(message *messa
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -268,7 +269,7 @@ func (pub *OrderOrchestratorPub) RollbackPurchaseDeliveryMessage(message *messag
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -295,7 +296,7 @@ func (pub *OrderOrchestratorPub) RollbackPurchaseEmailMessage(message *message.R
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }
@@ -322,7 +323,7 @@ func (pub *OrderOrchestratorPub) RollbackPurchasePaymentMessage(message *message
 			ContentType: "application/json",
 			Body:        body,
 		})
-	failOnError(err, "Failed to publish a message")
+	rabbitclient.FailOnError(err, "Failed to publish a message")
 
 	return nil
 }

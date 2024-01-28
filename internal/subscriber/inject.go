@@ -1,8 +1,11 @@
 package subscriber
 
-import "github.com/google/wire"
+import (
+	"github.com/google/wire"
+	"latipe-transaction-service/internal/subscriber/createPurchase"
+)
 
 var Set = wire.NewSet(
-	NewPurchaseSubscriberReply,
-	NewPurchaseCreateOrchestratorSubscriber,
+	createPurchase.NewPurchaseSubscriberReply,
+	createPurchase.NewPurchaseCreateOrchestratorSubscriber,
 )

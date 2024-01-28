@@ -1,16 +1,9 @@
-package subscriber
+package createPurchase
 
 import (
-	"github.com/gofiber/fiber/v2/log"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/service/orderserv"
 )
-
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-}
 
 func MappingRoutingKeyToService(routingKey string, config *config.Config) int {
 	switch routingKey {
