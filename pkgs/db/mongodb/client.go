@@ -19,14 +19,7 @@ type MongoClient struct {
 func OpenMongoDBConnection(cfg *config.Config) (*MongoClient, error) {
 	ctx := context.Background()
 
-	client, err := mongo.Connect(ctx,
-		options.Client().ApplyURI(cfg.DB.Mongodb.Connection).
-			SetAuth(options.Credential{
-				Username: cfg.DB.Mongodb.Username,
-				Password: cfg.DB.Mongodb.Password,
-			}).
-			SetConnectTimeout(cfg.DB.Mongodb.ConnectTimeout).
-			SetMaxPoolSize(cfg.DB.Mongodb.MaxPoolSize))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(cfg.DB.Mongodb.Connection))
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,36 @@ func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqu
 }
 
 func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message.OrderPendingMessage) error {
+	dao := entities.TransactionLog{
+		OrderID:           msg.OrderID,
+		TransactionStatus: 0,
+		CreatedAt:         time.Now(),
+		SuccessAt:         time.Now(),
+	}
+
+	txs := []entities.Commits{
+		{
+			ServiceName: DELIVERY_SERVICE_NAME,
+			TxStatus:    0,
+		},
+		{
+			ServiceName: PAYMENT_SERVICE_NAME,
+			TxStatus:    0,
+		},
+		{
+			ServiceName: PRODUCT_SERVICE_NAME,
+			TxStatus:    0,
+		}, {
+			ServiceName: PROMOTION_SERVICE_NAME,
+			TxStatus:    0,
+		},
+	}
+	dao.Commits = txs
+
+	if err := o.transactionRepo.CreateTransactionData(ctx, &dao); err != nil {
+		return err
+	}
+
 	// Create channels for error handling
 	errCh := make(chan error, 5) // Number of messages to send
 
@@ -73,7 +103,11 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	})
 
 	go sendMessage(func() error {
-		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{})
+		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{
+			EmailRecipient: msg.UserRequest.Username,
+			Name:           msg.Address.Name,
+			OrderId:        msg.OrderID,
+		})
 	})
 
 	go sendMessage(func() error {
@@ -85,12 +119,10 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 			ShippingCost:  msg.ShippingCost,
 			ReceiveDate:   msg.Delivery.ReceivingDate,
 		}
-
+		deliveryMsg.Address.AddressId = msg.Address.AddressId
 		deliveryMsg.Address.Name = msg.Address.Name
 		deliveryMsg.Address.AddressDetail = msg.Address.AddressDetail
-		deliveryMsg.Address.DistrictCode = msg.Address.DistrictCode
-		deliveryMsg.Address.ProvinceCode = msg.Address.ProvinceCode
-		deliveryMsg.Address.WardCode = msg.Address.WardCode
+
 		deliveryMsg.Address.Phone = msg.Address.Phone
 		return o.transactionOrchestrator.PublishPurchaseDeliveryMessage(&deliveryMsg)
 	})

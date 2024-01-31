@@ -310,7 +310,7 @@ func (mq PurchaseReplySubscriber) replyHandler(msg amqp.Delivery) error {
 		log.Infof("Parse message to order failed cause: %s", err)
 		return err
 	}
-
+	log.Infof(" order message from: %s - status %v", msg.RoutingKey, messageDTO.Status)
 	err := mq.orderServ.HandleTransactionPurchaseReply(ctx, &messageDTO,
 		MappingRoutingKeyToService(msg.RoutingKey, mq.config))
 	if err != nil {

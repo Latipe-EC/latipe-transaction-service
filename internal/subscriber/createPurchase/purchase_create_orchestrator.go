@@ -47,7 +47,7 @@ func (orch PurchaseCreateOrchestratorSubscriber) ListenProductPurchaseCreate(wg 
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"",
+		"deo the hieu",
 		true,
 		false,
 		false,
