@@ -171,8 +171,20 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 				ServiceName: MappingServiceName(serviceType),
 				TxStatus:    entities.TX_SUCCESS,
 			}
-			if err := o.transactionRepo.UpdateTransaction(ctx, trans, &commit); err != nil {
+			if err := o.transactionRepo.UpdateTransactionCommit(ctx, trans, &commit); err != nil {
 				return err
+			}
+
+			count, err := o.transactionRepo.CountTxSuccess(ctx, msg.OrderID)
+			if err != nil {
+				log.Error(err)
+			}
+
+			if count == NUMBER_OF_SERVICES_COMMIT {
+				trans.TransactionStatus = entities.TX_SUCCESS
+				if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -185,7 +197,10 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 
 			trans.TransactionStatus = entities.TX_FAIL
 
-			if err := o.transactionRepo.UpdateTransaction(ctx, trans, &commit); err != nil {
+			if err := o.transactionRepo.UpdateTransactionCommit(ctx, trans, &commit); err != nil {
+				return err
+			}
+			if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
 				return err
 			}
 		}

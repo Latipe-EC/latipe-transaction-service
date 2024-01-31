@@ -13,3 +13,5 @@ const (
 	DELIVERY_SERVICE_NAME  = "delivery_service"
 	PAYMENT_SERVICE_NAME   = "payment_service"
 )
+
+const NUMBER_OF_SERVICES_COMMIT = 4

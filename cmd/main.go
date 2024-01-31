@@ -22,7 +22,6 @@ func main() {
 	var wg sync.WaitGroup
 
 	startSubscribers(serv, &wg)
-	startCronJobs(serv, &wg)
 	startAPIHandler(serv, &wg)
 
 	wg.Wait()
@@ -58,19 +57,6 @@ func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 		serv.PurchaseReplySub().ListenDeliveryPurchaseReply(wg)
-	}()
-}
-
-func startCronJobs(serv *server.Server, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := serv.CheckTxStatusCron().StartJob(wg)
-		if err != nil {
-			log.Error(err)
-		}
 	}()
 }
 
