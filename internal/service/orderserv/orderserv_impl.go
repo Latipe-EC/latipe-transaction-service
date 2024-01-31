@@ -78,7 +78,11 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 
 	go sendMessage(func() error {
 		// Create and send product message
-		productMsg := message.OrderProductMessage{}
+		productMsg := message.OrderProductMessage{
+			OrderId: msg.OrderID,
+			StoreId: msg.StoreId,
+		}
+
 		var items []message.ProductMessage
 		for _, i := range msg.OrderItems {
 			item := message.ProductMessage{
@@ -107,10 +111,9 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 			OrderID:       msg.OrderID,
 			PaymentMethod: msg.PaymentMethod,
 			SubTotal:      msg.SubTotal,
-			TotalDiscount: msg.ItemDiscount + msg.ShippingDiscount,
 			Amount:        msg.Amount,
 			UserId:        msg.UserRequest.UserId,
-			CreatedAt:     time.Now(),
+			Status:        msg.Status,
 		}
 		return o.transactionOrchestrator.PublishPurchasePaymentMessage(&paymentMsg)
 	})

@@ -1,7 +1,9 @@
 package message
 
 type OrderProductMessage struct {
-	Items []ProductMessage `json:"items"`
+	OrderId string           `json:"orderId"`
+	StoreId string           `json:"storeId"`
+	Items   []ProductMessage `json:"items"`
 }
 
 type ProductMessage struct {

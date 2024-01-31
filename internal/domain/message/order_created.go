@@ -4,6 +4,7 @@ type OrderPendingMessage struct {
 	UserRequest      UserRequest         `json:"user_request"`
 	Status           int                 `json:"status"`
 	OrderID          string              `json:"order_id"`
+	StoreId          string              `json:"store_id"`
 	Amount           int                 `json:"amount"`
 	ShippingCost     int                 `json:"shipping_cost"`
 	ShippingDiscount int                 `json:"shipping_discount"`
