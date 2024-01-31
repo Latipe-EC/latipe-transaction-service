@@ -3,7 +3,8 @@ Server:
   Name: "Transaction service"
   AppVersion: 1.0.0
   BaseURI: 127.0.0.1:5020
-  Port: :5020
+  RestPort: :5020
+  GrpcPort: :6020
   Mode: local
   ReadTimeout: 5s
   WriteTimeout: 5s

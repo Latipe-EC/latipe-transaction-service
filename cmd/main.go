@@ -80,7 +80,7 @@ func startAPIHandler(serv *server.Server, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := serv.App().Listen(serv.Config().Server.Port); err != nil {
+		if err := serv.App().Listen(serv.Config().Server.RestPort); err != nil {
 			fmt.Printf("%s", err)
 		}
 	}()
