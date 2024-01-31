@@ -300,7 +300,6 @@ func (mq PurchaseReplySubscriber) ListenPaymentPurchaseReply(wg *sync.WaitGroup)
 }
 
 func (mq PurchaseReplySubscriber) replyHandler(msg amqp.Delivery) error {
-	startTime := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -318,7 +317,5 @@ func (mq PurchaseReplySubscriber) replyHandler(msg amqp.Delivery) error {
 		return err
 	}
 
-	endTime := time.Now()
-	log.Infof("The order [%v]  was processed successfully - duration:%v", messageDTO.OrderID, endTime.Sub(startTime))
 	return nil
 }

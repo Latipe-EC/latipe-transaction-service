@@ -3,6 +3,7 @@ package createPurchase
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"latipe-transaction-service/config"
@@ -115,5 +116,6 @@ func (orch PurchaseCreateOrchestratorSubscriber) handleMessage(msg *amqp.Deliver
 
 	endTime := time.Now()
 	log.Infof("The order [%v]  was processed successfully - duration:%v", messageDTO.OrderID, endTime.Sub(startTime))
+	fmt.Println()
 	return nil
 }

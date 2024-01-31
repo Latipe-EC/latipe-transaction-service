@@ -2,12 +2,14 @@ package orderserv
 
 import (
 	"context"
+	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	"latipe-transaction-service/internal/domain/entities"
 	"latipe-transaction-service/internal/domain/message"
 	"latipe-transaction-service/internal/domain/repos"
 	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +26,9 @@ func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqu
 }
 
 func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message.OrderPendingMessage) error {
+	fmt.Println()
+	log.Infof("starting purchase transaction for order [%v]", msg.OrderID)
+
 	dao := entities.TransactionLog{
 		OrderID:           msg.OrderID,
 		TransactionStatus: 0,
@@ -55,17 +60,24 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	}
 
 	// Create channels for error handling
-	errCh := make(chan error, 5) // Number of messages to send
+	errCh := make(chan error, 5) // number of messages to send
 
-	// Define a function to send messages and handle errors
+	// create a wait group to wait for all goroutines to finish
+	var wg sync.WaitGroup
+	wg.Add(5) // number of goroutines is equal to the number of message types
+
+	// define a function to send messages and handle errors
 	sendMessage := func(fn func() error) {
+		defer wg.Done() // decrement the wait group counter when the goroutine finishes
 		if err := fn(); err != nil {
 			errCh <- err
 		}
 	}
 
-	// Start goroutines for each message type
+	// start goroutines for each message type
+
 	go sendMessage(func() error {
+		// Create and send product message
 		productMsg := message.OrderProductMessage{}
 		var items []message.ProductMessage
 		for _, i := range msg.OrderItems {
@@ -81,15 +93,16 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	})
 
 	go sendMessage(func() error {
+		// Create and send voucher message
 		voucherMsg := message.VoucherMessage{
 			OrderID:  msg.OrderID,
 			Vouchers: strings.Split(msg.Vouchers, ";"),
 		}
-
 		return o.transactionOrchestrator.PublishPurchasePromotionMessage(&voucherMsg)
 	})
 
 	go sendMessage(func() error {
+		// Create and send payment message
 		paymentMsg := message.PaymentMessage{
 			OrderID:       msg.OrderID,
 			PaymentMethod: msg.PaymentMethod,
@@ -103,6 +116,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	})
 
 	go sendMessage(func() error {
+		// Create and send email message
 		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{
 			EmailRecipient: msg.UserRequest.Username,
 			Name:           msg.Address.Name,
@@ -111,6 +125,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	})
 
 	go sendMessage(func() error {
+		// Create and send delivery message
 		deliveryMsg := message.DeliveryMessage{
 			OrderID:       msg.OrderID,
 			DeliveryID:    msg.Delivery.DeliveryId,
@@ -122,20 +137,21 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		deliveryMsg.Address.AddressId = msg.Address.AddressId
 		deliveryMsg.Address.Name = msg.Address.Name
 		deliveryMsg.Address.AddressDetail = msg.Address.AddressDetail
-
 		deliveryMsg.Address.Phone = msg.Address.Phone
 		return o.transactionOrchestrator.PublishPurchaseDeliveryMessage(&deliveryMsg)
 	})
 
-	// Wait for all goroutines to finish
-	for i := 0; i < 5; i++ {
-		select {
-		case err := <-errCh:
-			// Handle error (you can log it, return it, etc.)
-			log.Errorf("Publish message failed: %v", err)
-		}
-	}
+	// wait for all goroutines to finish
+	wg.Wait()
 
+	// close the error channel after all goroutines have finished
+	close(errCh)
+
+	// handle any remaining errors in the error channel
+	for err := range errCh {
+		log.Errorf("Publish message failed: %v", err)
+	}
+	log.Infof("purchase transaction is finished [%v]", msg.OrderID)
 	return nil
 }
 
