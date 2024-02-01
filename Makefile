@@ -12,6 +12,9 @@ setup:
 wire:
 	cd internal/ && wire
 
+wire-linux:
+	cd internal/ && ~/go/bin/wire
+
 #linux
 # clean build file
 cleanl:
@@ -21,7 +24,7 @@ cleanl:
 # build binary
 buildl:
 	echo "build binary execute file"
-	make wire
+	make wire-linux
 	cd cmd/ && GOOS=linux GOARCH=amd64 $(GO) build -o $(BUILD_DIR)/$(WORKER_MAIN_FILE)_linux .
 
 runl:
