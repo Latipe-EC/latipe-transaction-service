@@ -8,6 +8,7 @@ import (
 	"latipe-transaction-service/internal/domain/message"
 	"latipe-transaction-service/internal/domain/repos"
 	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
+	redisCache "latipe-transaction-service/pkgs/cache/redis"
 	"strings"
 	"sync"
 	"time"
@@ -16,12 +17,15 @@ import (
 type orderService struct {
 	transactionRepo         repos.TransactionRepository
 	transactionOrchestrator *msgqueue.OrderOrchestratorPub
+	cacheEngine             *redisCache.CacheEngine
 }
 
-func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqueue.OrderOrchestratorPub) OrderService {
+func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqueue.OrderOrchestratorPub,
+	cacheEngine *redisCache.CacheEngine) OrderService {
 	return &orderService{
 		transactionRepo:         transRepos,
 		transactionOrchestrator: orchestrator,
+		cacheEngine:             cacheEngine,
 	}
 }
 
@@ -33,7 +37,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		OrderID:           msg.OrderID,
 		TransactionStatus: 0,
 		CreatedAt:         time.Now(),
-		SuccessAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	txs := []entities.Commits{
@@ -60,23 +64,26 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	}
 
 	// Create channels for error handling
-	errCh := make(chan error, 5) // number of messages to send
+	errCh := make(chan error, 6) // number of messages to send
 
 	// create a wait group to wait for all goroutines to finish
 	var wg sync.WaitGroup
-	wg.Add(5) // number of goroutines is equal to the number of message types
+	wg.Add(6) // number of goroutines is equal to the number of message types
 
 	// define a function to send messages and handle errors
-	sendMessage := func(fn func() error) {
+	handlerMessageGoroutine := func(fn func() error) {
 		defer wg.Done() // decrement the wait group counter when the goroutine finishes
 		if err := fn(); err != nil {
 			errCh <- err
 		}
 	}
 
-	// start goroutines for each message type
+	// start goroutines for each message type and set cache message
+	go handlerMessageGoroutine(func() error {
+		return o.cacheEngine.Set(msg.OrderID, msg, TTL_ORDER_MESSAGE)
+	})
 
-	go sendMessage(func() error {
+	go handlerMessageGoroutine(func() error {
 		// Create and send product message
 		productMsg := message.OrderProductMessage{
 			OrderId: msg.OrderID,
@@ -96,7 +103,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		return o.transactionOrchestrator.PublishPurchaseProductMessage(&productMsg)
 	})
 
-	go sendMessage(func() error {
+	go handlerMessageGoroutine(func() error {
 		// Create and send voucher message
 		voucherMsg := message.VoucherMessage{
 			OrderID:  msg.OrderID,
@@ -105,7 +112,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		return o.transactionOrchestrator.PublishPurchasePromotionMessage(&voucherMsg)
 	})
 
-	go sendMessage(func() error {
+	go handlerMessageGoroutine(func() error {
 		// Create and send payment message
 		paymentMsg := message.PaymentMessage{
 			OrderID:       msg.OrderID,
@@ -118,7 +125,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		return o.transactionOrchestrator.PublishPurchasePaymentMessage(&paymentMsg)
 	})
 
-	go sendMessage(func() error {
+	go handlerMessageGoroutine(func() error {
 		// Create and send email message
 		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{
 			EmailRecipient: msg.UserRequest.Username,
@@ -127,7 +134,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		})
 	})
 
-	go sendMessage(func() error {
+	go handlerMessageGoroutine(func() error {
 		// Create and send delivery message
 		deliveryMsg := message.DeliveryMessage{
 			OrderID:       msg.OrderID,
@@ -164,8 +171,16 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 		return err
 	}
 
-	if trans.TransactionStatus == entities.TX_PENDING {
-		if msg.Status == message.COMMIT_SUCCESS {
+	// Update transaction status if the transaction is pending
+	// and a reply message has a status of success.
+
+	// Rollback the transaction where the service has sent message has a status of success
+	// and transaction status is failed
+
+	if msg.Status == message.COMMIT_SUCCESS {
+
+		switch trans.TransactionStatus {
+		case entities.TX_PENDING:
 			trans = MappingTxStatus(trans, serviceType, entities.TX_SUCCESS)
 			commit := entities.Commits{
 				ServiceName: MappingServiceName(serviceType),
@@ -180,12 +195,14 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 				log.Error(err)
 			}
 
+			// Update order transaction status and reply purchase message to order
+			// then delete the cache message
 			if count == NUMBER_OF_SERVICES_COMMIT {
 
-				errChan := make(chan error, 5)
+				errChan := make(chan error, 3)
 
 				var wg sync.WaitGroup
-				wg.Add(2)
+				wg.Add(3)
 				processPool := func(fn func() error) {
 					defer wg.Done()
 					if err := fn(); err != nil {
@@ -206,6 +223,10 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 					return o.transactionRepo.UpdateTransactionStatus(ctx, trans)
 				})
 
+				go processPool(func() error {
+					return o.cacheEngine.Delete(msg.OrderID)
+				})
+
 				wg.Wait()
 				close(errChan)
 
@@ -217,32 +238,36 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 				return nil
 			}
 
-		}
-
-		if msg.Status == message.COMMIT_FAIL {
-			trans = MappingTxStatus(trans, serviceType, entities.TX_FAIL)
+		case entities.TX_FAIL:
 			commit := entities.Commits{
 				ServiceName: MappingServiceName(serviceType),
-				TxStatus:    entities.TX_SUCCESS,
+				TxStatus:    entities.TX_FAIL,
 			}
-
-			trans.TransactionStatus = entities.TX_FAIL
-
-			if err := o.transactionRepo.UpdateTransactionCommit(ctx, trans, &commit); err != nil {
+			if err := o.rollbackPurchaseToService(&commit, trans.OrderID); err != nil {
 				return err
 			}
-			if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
-				return err
-			}
+
 		}
+
 	}
 
-	if trans.TransactionStatus == entities.TX_FAIL {
+	// rollback transaction if reply message has a status of failed
+	if msg.Status == message.COMMIT_FAIL && trans.TransactionStatus == entities.TX_PENDING {
+		trans = MappingTxStatus(trans, serviceType, entities.TX_FAIL)
 		commit := entities.Commits{
 			ServiceName: MappingServiceName(serviceType),
 			TxStatus:    entities.TX_FAIL,
 		}
-		if err := o.rollbackPurchaseToService(&commit, trans.OrderID); err != nil {
+		if err := o.transactionRepo.UpdateTransactionCommit(ctx, trans, &commit); err != nil {
+			return err
+		}
+
+		trans.TransactionStatus = entities.TX_FAIL
+		if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
+			return err
+		}
+
+		if err := o.RollbackTransactionPub(trans); err != nil {
 			return err
 		}
 	}

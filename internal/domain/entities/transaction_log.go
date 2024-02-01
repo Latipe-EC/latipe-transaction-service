@@ -12,15 +12,16 @@ const (
 )
 
 type TransactionLog struct {
-	ID                primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ID                primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	OrderID           string             `json:"order_id" bson:"order_id"`
 	TransactionStatus int                `json:"transaction_status" bson:"transaction_status"`
 	CreatedAt         time.Time          `json:"created_at" bson:"created_at"`
-	SuccessAt         time.Time          `json:"success_at" bson:"success_at"`
+	UpdatedAt         time.Time          `json:"updated_at" bson:"updated_at"`
 	Commits           []Commits          `json:"commits" bson:"commits"`
 }
 
 type Commits struct {
-	ServiceName string `json:"service_name" bson:"service_name"`
-	TxStatus    int    `json:"tx_status" bson:"tx_status"`
+	ServiceName string    `json:"service_name" bson:"service_name"`
+	TxStatus    int       `json:"tx_status" bson:"tx_status"`
+	UpdatedAt   time.Time `json:"updated_at" bson:"updated_at"`
 }

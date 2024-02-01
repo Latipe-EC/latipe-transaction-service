@@ -12,11 +12,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"latipe-transaction-service/config"
+	"latipe-transaction-service/internal/adapter/userserv"
+	"latipe-transaction-service/internal/api/handler"
+	"latipe-transaction-service/internal/api/middeware"
+	"latipe-transaction-service/internal/api/router"
 	"latipe-transaction-service/internal/cronjob"
 	"latipe-transaction-service/internal/domain/repos"
-	createPurchase2 "latipe-transaction-service/internal/publisher/createPurchase"
+	"latipe-transaction-service/internal/publisher/createPurchase"
 	"latipe-transaction-service/internal/service/orderserv"
-	"latipe-transaction-service/internal/subscriber/createPurchase"
+	"latipe-transaction-service/internal/service/transactionserv"
+	createPurchase2 "latipe-transaction-service/internal/subscriber/createPurchase"
+	"latipe-transaction-service/pkgs/cache"
 	"latipe-transaction-service/pkgs/db/mongodb"
 	"latipe-transaction-service/pkgs/rabbitclient"
 )
@@ -33,14 +39,23 @@ func New() (*Server, error) {
 		return nil, err
 	}
 	transactionRepository := repos.NewTransactionRepository(mongoClient)
+	cacheEngine, err := cache.NewCacheEngine(configConfig)
+	if err != nil {
+		return nil, err
+	}
+	transactionService := transactionserv.NewTransactionService(transactionRepository, cacheEngine)
+	transactionApiHandler := handler.NewTransactionHandler(transactionService)
+	userService := userserv.NewUserService(configConfig)
+	authMiddleware := middleware.NewAuthMiddleware(userService)
+	transactionRouter := router.NewTransactionRouter(transactionApiHandler, authMiddleware)
 	connection := rabbitclient.NewRabbitClientConnection(configConfig)
-	orderOrchestratorPub := createPurchase2.NewOrderOrchestratorPub(configConfig, connection)
-	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub)
-	purchaseReplySubscriber := createPurchase.NewPurchaseSubscriberReply(configConfig, orderService, connection)
-	purchaseCreateOrchestratorSubscriber := createPurchase.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService, connection)
+	orderOrchestratorPub := createPurchase.NewOrderOrchestratorPub(configConfig, connection)
+	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub, cacheEngine)
+	purchaseReplySubscriber := createPurchase2.NewPurchaseSubscriberReply(configConfig, orderService, connection)
+	purchaseCreateOrchestratorSubscriber := createPurchase2.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService, connection)
 	cron := cronjob.NewCronInstance()
 	checkingTxStatusCronJ := cronjob.NewCheckingTxStatusCronJ(configConfig, cron, orderService)
-	server := NewServer(configConfig, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, checkingTxStatusCronJ)
+	server := NewServer(configConfig, transactionRouter, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, checkingTxStatusCronJ)
 	return server, nil
 }
 
@@ -49,8 +64,8 @@ func New() (*Server, error) {
 type Server struct {
 	app               *fiber.App
 	globalCfg         *config.Config
-	purchaseReplySub  *createPurchase.PurchaseReplySubscriber
-	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber
+	purchaseReplySub  *createPurchase2.PurchaseReplySubscriber
+	purchaseCreateSub *createPurchase2.PurchaseCreateOrchestratorSubscriber
 	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
@@ -62,11 +77,11 @@ func (serv Server) Config() *config.Config {
 	return serv.globalCfg
 }
 
-func (serv Server) PurchaseReplySub() *createPurchase.PurchaseReplySubscriber {
+func (serv Server) PurchaseReplySub() *createPurchase2.PurchaseReplySubscriber {
 	return serv.purchaseReplySub
 }
 
-func (serv Server) PurchaseCreateSub() *createPurchase.PurchaseCreateOrchestratorSubscriber {
+func (serv Server) PurchaseCreateSub() *createPurchase2.PurchaseCreateOrchestratorSubscriber {
 	return serv.purchaseCreateSub
 }
 
@@ -76,8 +91,9 @@ func (serv Server) CheckTxStatusCron() *cronjob.CheckingTxStatusCronJ {
 
 func NewServer(
 	cfg *config.Config,
-	purchaseReplySub *createPurchase.PurchaseReplySubscriber,
-	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber,
+	transRouter router.TransactionRouter,
+	purchaseReplySub *createPurchase2.PurchaseReplySubscriber,
+	purchaseCreateSub *createPurchase2.PurchaseCreateOrchestratorSubscriber,
 	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{
@@ -98,11 +114,14 @@ func NewServer(
 			Message string `json:"message"`
 			Version string `json:"version"`
 		}{
-			Message: "transaction service was developed by TienDat",
+			Message: "transaction service was developed by tdatIT",
 			Version: "v1.0.0",
 		}
 		return ctx.JSON(s)
 	})
+	api := app.Group("/api")
+	v1 := api.Group("/v1")
+	transRouter.Init(&v1)
 
 	return &Server{
 		globalCfg:         cfg,

@@ -4,9 +4,12 @@ import (
 	"context"
 	"github.com/gofiber/fiber/v2/log"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"latipe-transaction-service/internal/domain/entities"
 	"latipe-transaction-service/pkgs/db/mongodb"
+	"latipe-transaction-service/pkgs/util/pagable"
 	"time"
 )
 
@@ -50,6 +53,7 @@ func (t *transactionRepository) UpdateTransactionCommit(ctx context.Context, dao
 	update := bson.D{
 		{"$set", bson.D{
 			{"commits.$.tx_status", commit.TxStatus},
+			{"commits.$.updated_at", time.Now()},
 		}},
 	}
 
@@ -67,6 +71,7 @@ func (t *transactionRepository) UpdateTransactionStatus(ctx context.Context, dao
 	update := bson.D{
 		{"$set", bson.D{
 			{"transaction_status", dao.TransactionStatus},
+			{"updated_at", time.Now()},
 		}},
 	}
 
@@ -130,4 +135,41 @@ func (t *transactionRepository) CountTxSuccess(ctx context.Context, orderId stri
 	}
 
 	return int(result.CountCommitsSuccess), nil
+}
+
+func (t *transactionRepository) FindByTransactionId(ctx context.Context, transactionId string) (*entities.TransactionLog, error) {
+	var entity entities.TransactionLog
+	id, _ := primitive.ObjectIDFromHex(transactionId)
+
+	err := t.transCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&entity)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity, err
+}
+
+func (t *transactionRepository) FindAll(ctx context.Context, query *pagable.Query) ([]entities.TransactionLog, int, error) {
+	var trans []entities.TransactionLog
+
+	filter, err := query.ConvertQueryToFilter()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	opts := options.Find().SetLimit(int64(query.GetSize())).SetSkip(int64(query.GetOffset()))
+	cursor, err := t.transCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err = cursor.All(ctx, &trans); err != nil {
+		return nil, 0, err
+	}
+
+	total, err := t.transCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	return trans, int(total), err
 }

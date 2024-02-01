@@ -13,9 +13,9 @@ import (
 var Set = wire.NewSet(NewConfig)
 
 type Config struct {
-	Server Server
-	DB     DB
-	//Adapters Adapters
+	Server         Server
+	DB             DB
+	Cache          Cache
 	AdapterService AdapterService
 	RabbitMQ       RabbitMQ
 	CronJob        CronJob
@@ -40,6 +40,16 @@ type Server struct {
 	ExpirationLimitTime time.Duration //  expiration time of the limit
 }
 
+type Cache struct {
+	Redis Redis
+}
+
+type Redis struct {
+	Address  string
+	Port     int
+	Password string
+	DB       int
+}
 type CronJob struct {
 	CheckingTxStatus string
 }
@@ -146,13 +156,13 @@ type AdapterService struct {
 	PromotionService PromotionService
 	StoreService     StoreService
 }
+
 type AuthService struct {
 	BaseURL     string
 	InternalKey string
 }
 
 type UserService struct {
-	AuthURL     string
 	UserURL     string
 	InternalKey string
 }

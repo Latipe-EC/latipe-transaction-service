@@ -10,12 +10,17 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/google/wire"
 	"latipe-transaction-service/config"
+	"latipe-transaction-service/internal/adapter"
+	"latipe-transaction-service/internal/api/handler"
+	middleware "latipe-transaction-service/internal/api/middeware"
+	"latipe-transaction-service/internal/api/router"
 	"latipe-transaction-service/internal/cronjob"
 	"latipe-transaction-service/internal/domain/repos"
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service"
 	"latipe-transaction-service/internal/subscriber"
 	"latipe-transaction-service/internal/subscriber/createPurchase"
+	"latipe-transaction-service/pkgs/cache"
 	"latipe-transaction-service/pkgs/db/mongodb"
 	"latipe-transaction-service/pkgs/rabbitclient"
 )
@@ -52,10 +57,15 @@ func New() (*Server, error) {
 	panic(wire.Build(wire.NewSet(
 		NewServer,
 		config.Set,
+		cache.Set,
 		mongodb.Set,
 		rabbitclient.Set,
 		repos.Set,
 		service.Set,
+		adapter.Set,
+		handler.Set,
+		middleware.Set,
+		router.Set,
 		subscriber.Set,
 		publisher.Set,
 		cronjob.Set,
@@ -64,6 +74,7 @@ func New() (*Server, error) {
 
 func NewServer(
 	cfg *config.Config,
+	transRouter router.TransactionRouter,
 	purchaseReplySub *createPurchase.PurchaseReplySubscriber,
 	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber,
 	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
@@ -87,11 +98,14 @@ func NewServer(
 			Message string `json:"message"`
 			Version string `json:"version"`
 		}{
-			Message: "transaction service was developed by TienDat",
+			Message: "transaction service was developed by tdatIT",
 			Version: "v1.0.0",
 		}
 		return ctx.JSON(s)
 	})
+	api := app.Group("/api")
+	v1 := api.Group("/v1")
+	transRouter.Init(&v1)
 
 	return &Server{
 		globalCfg:         cfg,

@@ -1,5 +1,7 @@
 package orderserv
 
+import "time"
+
 const (
 	PRODUCT_SERVICE   = 1
 	PROMOTION_SERVICE = 2
@@ -15,3 +17,5 @@ const (
 )
 
 const NUMBER_OF_SERVICES_COMMIT = 3
+
+const TTL_ORDER_MESSAGE = 10 * time.Minute
