@@ -28,7 +28,7 @@ func NewPurchaseCreateOrchestratorSubscriber(cfg *config.Config,
 	}
 }
 
-func (orch PurchaseCreateOrchestratorSubscriber) ListenProductPurchaseCreate(wg *sync.WaitGroup) {
+func (orch PurchaseCreateOrchestratorSubscriber) ListenPurchaseCreate(wg *sync.WaitGroup) {
 	channel, err := orch.conn.Channel()
 	defer channel.Close()
 
@@ -48,7 +48,7 @@ func (orch PurchaseCreateOrchestratorSubscriber) ListenProductPurchaseCreate(wg 
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"deo the hieu",
+		"purchase_event",
 		true,
 		false,
 		false,

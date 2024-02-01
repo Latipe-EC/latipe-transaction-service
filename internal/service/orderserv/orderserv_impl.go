@@ -181,11 +181,42 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 			}
 
 			if count == NUMBER_OF_SERVICES_COMMIT {
-				trans.TransactionStatus = entities.TX_SUCCESS
-				if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
-					return err
+
+				errChan := make(chan error, 5)
+
+				var wg sync.WaitGroup
+				wg.Add(2)
+				processPool := func(fn func() error) {
+					defer wg.Done()
+					if err := fn(); err != nil {
+						errChan <- err
+					}
 				}
+
+				go processPool(func() error {
+					replyMsg := message.CreateOrderReplyMessage{
+						Status:  entities.TX_SUCCESS,
+						OrderID: msg.OrderID,
+					}
+					return o.transactionOrchestrator.ReplyPurchaseMessage(&replyMsg)
+				})
+
+				go processPool(func() error {
+					trans.TransactionStatus = entities.TX_SUCCESS
+					return o.transactionRepo.UpdateTransactionStatus(ctx, trans)
+				})
+
+				wg.Wait()
+				close(errChan)
+
+				// handle any remaining errors in the error channel
+				for err := range errChan {
+					log.Errorf("committing transaction is failed: %v", err)
+				}
+				log.Infof(" purchase transaction is committed [%v]", msg.OrderID)
+				return nil
 			}
+
 		}
 
 		if msg.Status == message.COMMIT_FAIL {

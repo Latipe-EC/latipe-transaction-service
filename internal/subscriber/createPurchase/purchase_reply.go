@@ -47,7 +47,7 @@ func (mq PurchaseReplySubscriber) ListenProductPurchaseReply(wg *sync.WaitGroup)
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"",
+		"product_reply",
 		true,
 		false,
 		false,
@@ -115,7 +115,7 @@ func (mq PurchaseReplySubscriber) ListenPromotionPurchaseReply(wg *sync.WaitGrou
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"",
+		"promotion_reply",
 		true,
 		false,
 		false,
@@ -183,7 +183,7 @@ func (mq PurchaseReplySubscriber) ListenDeliveryPurchaseReply(wg *sync.WaitGroup
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"",
+		"delivery_reply",
 		true,
 		false,
 		false,
@@ -251,7 +251,7 @@ func (mq PurchaseReplySubscriber) ListenPaymentPurchaseReply(wg *sync.WaitGroup)
 
 	// create queue
 	q, err := channel.QueueDeclare(
-		"",
+		"payment_reply",
 		true,
 		false,
 		false,

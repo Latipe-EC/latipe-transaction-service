@@ -14,4 +14,4 @@ const (
 	PAYMENT_SERVICE_NAME   = "payment_service"
 )
 
-const NUMBER_OF_SERVICES_COMMIT = 4
+const NUMBER_OF_SERVICES_COMMIT = 3

@@ -32,7 +32,7 @@ func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		serv.PurchaseCreateSub().ListenProductPurchaseCreate(wg)
+		serv.PurchaseCreateSub().ListenPurchaseCreate(wg)
 	}()
 
 	wg.Add(1)
