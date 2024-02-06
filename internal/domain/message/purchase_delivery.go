@@ -1,5 +1,7 @@
 package message
 
+import "time"
+
 type DeliveryMessage struct {
 	OrderID       string          `json:"order_id"`
 	DeliveryID    string          `json:"delivery_id"`
@@ -7,7 +9,7 @@ type DeliveryMessage struct {
 	PaymentMethod int             `json:"payment_method"`
 	Total         int             `json:"total"`
 	ShippingCost  int             `json:"shipping_cost"`
-	ReceiveDate   string          `json:"receive_date"`
+	ReceiveDate   time.Time       `json:"receive_date"`
 	ShippingItems []ShippingItems `json:"items"`
 }
 

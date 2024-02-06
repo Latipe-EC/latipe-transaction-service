@@ -9,7 +9,6 @@ import (
 	"latipe-transaction-service/internal/domain/repos"
 	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
 	redisCache "latipe-transaction-service/pkgs/cache/redis"
-	"strings"
 	"sync"
 	"time"
 )
@@ -31,44 +30,78 @@ func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqu
 
 func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message.OrderPendingMessage) error {
 	fmt.Println()
-	log.Infof("starting purchase transaction for order [%v]", msg.OrderID)
+	log.Infof("starting purchase transaction for order [%v]", msg.CheckoutMessage.CheckoutID)
 
-	dao := entities.TransactionLog{
-		OrderID:           msg.OrderID,
-		TransactionStatus: 0,
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
+	for _, i := range msg.OrderDetail {
+		dao := entities.TransactionLog{
+			OrderID:           i.OrderID,
+			TransactionStatus: 0,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+
+		txs := []entities.Commits{
+			{
+				ServiceName: DELIVERY_SERVICE_NAME,
+				TxStatus:    0,
+			},
+			{
+				ServiceName: PAYMENT_SERVICE_NAME,
+				TxStatus:    0,
+			},
+			{
+				ServiceName: PRODUCT_SERVICE_NAME,
+				TxStatus:    0,
+			}, {
+				ServiceName: PROMOTION_SERVICE_NAME,
+				TxStatus:    0,
+			},
+		}
+		dao.Commits = txs
+
+		if err := o.transactionRepo.CreateTransactionData(ctx, &dao); err != nil {
+			return err
+		}
+
+		if err := o.handlePurchaseTransaction(msg, &i); err != nil {
+			continue
+		}
+
 	}
 
-	txs := []entities.Commits{
-		{
-			ServiceName: DELIVERY_SERVICE_NAME,
-			TxStatus:    0,
-		},
-		{
-			ServiceName: PAYMENT_SERVICE_NAME,
-			TxStatus:    0,
-		},
-		{
-			ServiceName: PRODUCT_SERVICE_NAME,
-			TxStatus:    0,
-		}, {
-			ServiceName: PROMOTION_SERVICE_NAME,
-			TxStatus:    0,
+	promotionReq := message.ApplyVoucherMessage{
+		UserId: msg.UserRequest.UserId,
+		CheckoutData: message.CheckoutRequest{
+			CheckoutID: msg.CheckoutMessage.CheckoutID,
 		},
 	}
-	dao.Commits = txs
 
-	if err := o.transactionRepo.CreateTransactionData(ctx, &dao); err != nil {
+	for _, i := range msg.OrderDetail {
+		promotionReq.CheckoutData.OrderData = append(promotionReq.CheckoutData.OrderData, message.PromotionOrderData{
+			OrderID: i.OrderID,
+			StoreID: i.StoreID,
+		})
+	}
+
+	promotionReq.Vouchers = []string{msg.PromotionMessage.PaymentVoucher, msg.PromotionMessage.FreeShippingVoucher}
+	promotionReq.Vouchers = append(promotionReq.Vouchers, msg.PromotionMessage.ShopVoucher...)
+
+	if err := o.transactionOrchestrator.PublishPurchasePromotionMessage(&promotionReq); err != nil {
 		return err
 	}
+	log.Infof("purchase transaction is finished [%v]", msg.CheckoutMessage.CheckoutID)
+
+	return nil
+}
+
+func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage, orderDetail *message.OrderDetail) error {
 
 	// Create channels for error handling
-	errCh := make(chan error, 6) // number of messages to send
+	errCh := make(chan error, 5) // number of messages to send
 
 	// create a wait group to wait for all goroutines to finish
 	var wg sync.WaitGroup
-	wg.Add(6) // number of goroutines is equal to the number of message types
+	wg.Add(5) // number of goroutines is equal to the number of message types
 
 	// define a function to send messages and handle errors
 	handlerMessageGoroutine := func(fn func() error) {
@@ -80,18 +113,18 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 
 	// start goroutines for each message type and set cache message
 	go handlerMessageGoroutine(func() error {
-		return o.cacheEngine.Set(msg.OrderID, msg, TTL_ORDER_MESSAGE)
+		return o.cacheEngine.Set(orderDetail.OrderID, msg, TTL_ORDER_MESSAGE)
 	})
 
 	go handlerMessageGoroutine(func() error {
 		// Create and send product message
 		productMsg := message.OrderProductMessage{
-			OrderId: msg.OrderID,
-			StoreId: msg.StoreId,
+			OrderId: orderDetail.OrderID,
+			StoreId: orderDetail.StoreID,
 		}
 
 		var items []message.ProductMessage
-		for _, i := range msg.OrderItems {
+		for _, i := range orderDetail.OrderItems {
 			item := message.ProductMessage{
 				ProductId: i.ProductItem.ProductID,
 				OptionId:  i.ProductItem.OptionID,
@@ -104,23 +137,14 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	})
 
 	go handlerMessageGoroutine(func() error {
-		// Create and send voucher message
-		voucherMsg := message.VoucherMessage{
-			OrderID:  msg.OrderID,
-			Vouchers: strings.Split(msg.Vouchers, ";"),
-		}
-		return o.transactionOrchestrator.PublishPurchasePromotionMessage(&voucherMsg)
-	})
-
-	go handlerMessageGoroutine(func() error {
 		// Create and send payment message
 		paymentMsg := message.PaymentMessage{
-			OrderID:       msg.OrderID,
-			PaymentMethod: msg.PaymentMethod,
-			SubTotal:      msg.SubTotal,
-			Amount:        msg.Amount,
+			OrderID:       orderDetail.OrderID,
+			PaymentMethod: orderDetail.PaymentMethod,
+			SubTotal:      orderDetail.SubTotal,
+			Amount:        orderDetail.Amount,
 			UserId:        msg.UserRequest.UserId,
-			Status:        msg.Status,
+			Status:        orderDetail.Status,
 		}
 		return o.transactionOrchestrator.PublishPurchasePaymentMessage(&paymentMsg)
 	})
@@ -130,19 +154,19 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{
 			EmailRecipient: msg.UserRequest.Username,
 			Name:           msg.Address.Name,
-			OrderId:        msg.OrderID,
+			OrderId:        orderDetail.OrderID,
 		})
 	})
 
 	go handlerMessageGoroutine(func() error {
 		// Create and send delivery message
 		deliveryMsg := message.DeliveryMessage{
-			OrderID:       msg.OrderID,
-			DeliveryID:    msg.Delivery.DeliveryId,
-			PaymentMethod: msg.PaymentMethod,
-			Total:         msg.Amount,
-			ShippingCost:  msg.ShippingCost,
-			ReceiveDate:   msg.Delivery.ReceivingDate,
+			OrderID:       orderDetail.OrderID,
+			DeliveryID:    orderDetail.Delivery.DeliveryId,
+			PaymentMethod: orderDetail.PaymentMethod,
+			Total:         orderDetail.Amount,
+			ShippingCost:  orderDetail.ShippingCost,
+			ReceiveDate:   orderDetail.Delivery.ReceivingDate,
 		}
 		deliveryMsg.Address.AddressId = msg.Address.AddressId
 		deliveryMsg.Address.Name = msg.Address.Name
@@ -161,7 +185,7 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 	for err := range errCh {
 		log.Errorf("Publish message failed: %v", err)
 	}
-	log.Infof("purchase transaction is finished [%v]", msg.OrderID)
+	log.Infof("purchase transaction is finished [%v]", orderDetail.OrderID)
 	return nil
 }
 

@@ -115,7 +115,7 @@ func (orch PurchaseCreateOrchestratorSubscriber) handleMessage(msg *amqp.Deliver
 	}
 
 	endTime := time.Now()
-	log.Infof("The order [%v]  was processed successfully - duration:%v", messageDTO.OrderID, endTime.Sub(startTime))
+	log.Infof("The orders [checkout_id: %v]  was processed successfully - duration:%v", messageDTO.CheckoutMessage.CheckoutID, endTime.Sub(startTime))
 	fmt.Println()
 	return nil
 }

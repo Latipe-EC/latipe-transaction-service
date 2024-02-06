@@ -1,20 +1,27 @@
 package message
 
+import "time"
+
 type OrderPendingMessage struct {
-	UserRequest      UserRequest         `json:"user_request"`
+	UserRequest      UserRequest      `json:"user_request,omitempty"`
+	Address          OrderAddress     `json:"address,omitempty" validate:"required"`
+	CheckoutMessage  CheckoutMessage  `json:"checkout_data"`
+	PromotionMessage PromotionMessage `json:"promotion_data"`
+	OrderDetail      []OrderDetail    `json:"order_detail"`
+}
+type OrderDetail struct {
 	Status           int                 `json:"status"`
-	OrderID          string              `json:"order_id"`
-	StoreId          string              `json:"store_id"`
-	Amount           int                 `json:"amount"`
-	ShippingCost     int                 `json:"shipping_cost"`
-	ShippingDiscount int                 `json:"shipping_discount"`
-	ItemDiscount     int                 `json:"item_discount"`
-	SubTotal         int                 `json:"sub_total"`
-	PaymentMethod    int                 `json:"payment_method" `
+	OrderID          string              `json:"order_id,omitempty"`
+	StoreID          string              `json:"store_id" validate:"required"`
+	Amount           int                 `json:"amount,omitempty" validate:"required"`
+	ShippingCost     int                 `json:"shipping_cost,omitempty"`
+	ShippingDiscount int                 `json:"shipping_discount,omitempty" validate:"required"`
+	ItemDiscount     int                 `json:"item_discount,omitempty" validate:"required"`
+	SubTotal         int                 `json:"sub_total,omitempty" validate:"required"`
+	PaymentMethod    int                 `json:"payment_method,omitempty" validate:"required"`
 	Vouchers         string              `json:"vouchers,omitempty"`
-	Address          OrderAddress        `json:"address,omitempty" `
-	Delivery         Delivery            `json:"delivery,omitempty" `
-	OrderItems       []OrderItemsMessage `json:"order_items,omitempty"`
+	Delivery         Delivery            `json:"delivery,omitempty" validate:"required"`
+	OrderItems       []OrderItemsMessage `json:"order_items,omitempty" validate:"required"`
 	CartIds          []string            `json:"cart_ids"`
 }
 
@@ -48,8 +55,27 @@ type OrderAddress struct {
 }
 
 type Delivery struct {
-	DeliveryId    string `json:"delivery_id" validate:"required"`
-	Name          string `json:"name" validate:"required"`
-	Cost          int    `json:"cost" validate:"required"`
-	ReceivingDate string `json:"receiving_date" validate:"required"`
+	DeliveryId    string    `json:"delivery_id" validate:"required"`
+	Name          string    `json:"name" validate:"required"`
+	Cost          int       `json:"cost" validate:"required"`
+	ReceivingDate time.Time `json:"receiving_date" validate:"required"`
+}
+
+type PromotionMessage struct {
+	FreeShippingVoucher string   `json:"free_shipping_voucher"`
+	PaymentVoucher      string   `json:"payment_voucher"`
+	ShopVoucher         []string `json:"shop_vouchers"`
+}
+
+type CheckoutMessage struct {
+	CheckoutID    string      `json:"checkout_id"`
+	UserID        string      `json:"user_id"`
+	OrderData     []OrderData `json:"order_data"`
+	TotalAmount   uint        `json:"total_amount"`
+	PaymentMethod int         `json:"payment_method"`
+}
+
+type OrderData struct {
+	OrderID string `json:"order_id"`
+	Amount  uint   `json:"amount"`
 }
