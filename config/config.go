@@ -89,6 +89,7 @@ type SagaOrderEvent struct {
 	Connection        string
 	Exchange          string
 	PublishRoutingKey string
+	CancelRoutingKey  string
 	ReplyRoutingKey   string
 	Queue             string
 }

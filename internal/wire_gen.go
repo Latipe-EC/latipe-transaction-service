@@ -21,6 +21,7 @@ import (
 	"latipe-transaction-service/internal/publisher/createPurchase"
 	"latipe-transaction-service/internal/service/orderserv"
 	"latipe-transaction-service/internal/service/transactionserv"
+	"latipe-transaction-service/internal/subscriber/cancelPurchase"
 	createPurchase2 "latipe-transaction-service/internal/subscriber/createPurchase"
 	"latipe-transaction-service/pkgs/cache"
 	"latipe-transaction-service/pkgs/db/mongodb"
@@ -53,9 +54,10 @@ func New() (*Server, error) {
 	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub, cacheEngine)
 	purchaseReplySubscriber := createPurchase2.NewPurchaseSubscriberReply(configConfig, orderService, connection)
 	purchaseCreateOrchestratorSubscriber := createPurchase2.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService, connection)
+	purchaseCancelOrchestratorSubscriber := cancelPurchase.NewPurchaseCancelOrchestratorSubscriber(configConfig, orderService, connection)
 	cron := cronjob.NewCronInstance()
 	checkingTxStatusCronJ := cronjob.NewCheckingTxStatusCronJ(configConfig, cron, orderService)
-	server := NewServer(configConfig, transactionRouter, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, checkingTxStatusCronJ)
+	server := NewServer(configConfig, transactionRouter, purchaseReplySubscriber, purchaseCreateOrchestratorSubscriber, purchaseCancelOrchestratorSubscriber, checkingTxStatusCronJ)
 	return server, nil
 }
 
@@ -66,6 +68,7 @@ type Server struct {
 	globalCfg         *config.Config
 	purchaseReplySub  *createPurchase2.PurchaseReplySubscriber
 	purchaseCreateSub *createPurchase2.PurchaseCreateOrchestratorSubscriber
+	purchaseCancelSub *cancelPurchase.PurchaseCancelOrchestratorSubscriber
 	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
@@ -85,6 +88,10 @@ func (serv Server) PurchaseCreateSub() *createPurchase2.PurchaseCreateOrchestrat
 	return serv.purchaseCreateSub
 }
 
+func (serv Server) PurchaseCancelSub() *cancelPurchase.PurchaseCancelOrchestratorSubscriber {
+	return serv.purchaseCancelSub
+}
+
 func (serv Server) CheckTxStatusCron() *cronjob.CheckingTxStatusCronJ {
 	return serv.checkTxStatus
 }
@@ -94,6 +101,7 @@ func NewServer(
 	transRouter router.TransactionRouter,
 	purchaseReplySub *createPurchase2.PurchaseReplySubscriber,
 	purchaseCreateSub *createPurchase2.PurchaseCreateOrchestratorSubscriber,
+	purchaseCancelSub *cancelPurchase.PurchaseCancelOrchestratorSubscriber,
 	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{
@@ -128,6 +136,7 @@ func NewServer(
 		app:               app,
 		purchaseReplySub:  purchaseReplySub,
 		purchaseCreateSub: purchaseCreateSub,
+		purchaseCancelSub: purchaseCancelSub,
 		checkTxStatus:     checkTxStatus,
 	}
 }

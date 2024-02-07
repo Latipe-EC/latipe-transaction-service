@@ -200,7 +200,6 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 
 	// Rollback the transaction where the service has sent message has a status of success
 	// and transaction status is failed
-
 	if msg.Status == message.COMMIT_SUCCESS {
 
 		switch trans.TransactionStatus {
@@ -361,4 +360,56 @@ func (o orderService) CheckTransactionStatus(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (o orderService) CancelOrder(ctx context.Context, req *message.CancelOrderMessage) error {
+	msg := message.RollbackPurchaseMessage{
+		Status:  req.CancelStatus,
+		OrderID: req.OrderID,
+	}
+
+	// Create channels for error handling
+	errCh := make(chan error, 4) // number of messages to send
+
+	// create a wait group to wait for all goroutines to finish
+	var wg sync.WaitGroup
+	wg.Add(4) // number of goroutines is equal to the number of message types
+
+	// define a function to send messages and handle errors
+	handlerMessageGoroutine := func(fn func() error) {
+		defer wg.Done() // decrement the wait group counter when the goroutine finishes
+		if err := fn(); err != nil {
+			errCh <- err
+		}
+	}
+
+	// start goroutines for each message type and set cache message
+	go handlerMessageGoroutine(func() error {
+		return o.transactionOrchestrator.RollbackPurchaseDeliveryMessage(&msg)
+	})
+
+	go handlerMessageGoroutine(func() error {
+		return o.transactionOrchestrator.RollbackPurchaseProductMessage(&msg)
+	})
+
+	go handlerMessageGoroutine(func() error {
+		return o.transactionOrchestrator.RollbackPurchasePromotionMessage(&msg)
+	})
+
+	go handlerMessageGoroutine(func() error {
+		return o.transactionOrchestrator.RollbackPurchasePaymentMessage(&msg)
+	})
+
+	// wait for all goroutines to finish
+	wg.Wait()
+
+	// close the error channel after all goroutines have finished
+	close(errCh)
+
+	// handle any remaining errors in the error channel
+	for err := range errCh {
+		log.Errorf("Publish message failed: %v", err)
+	}
+
+	return nil
 }

@@ -38,6 +38,12 @@ func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		serv.PurchaseCancelSub().ListenPurchaseCancel(wg)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		serv.PurchaseReplySub().ListenProductPurchaseReply(wg)
 	}()
 

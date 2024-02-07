@@ -44,6 +44,7 @@ RabbitMQ:
     Exchange: order_transaction_ex
     PublishRoutingKey: order.transaction.commit
     ReplyRoutingKey: order.transaction.reply
+    CancelRoutingKey: order.transaction.cancel
 
   SagaOrderProductEvent:
     Exchange: order_transaction_ex
@@ -54,7 +55,7 @@ RabbitMQ:
 
   SagaOrderPaymentEvent:
     Exchange: order_transaction_ex
-    CommitRoutingKey: order.payment.create
+    CommitRoutingKey: order.payment.event
     RollbackRoutingKey: order.payment.rollback
     ReplyRoutingKey: order.payment.reply
     Queue:

@@ -5,10 +5,6 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/ansrivas/fiberprometheus/v2"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/google/wire"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/adapter"
 	"latipe-transaction-service/internal/api/handler"
@@ -19,10 +15,14 @@ import (
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service"
 	"latipe-transaction-service/internal/subscriber"
+	"latipe-transaction-service/internal/subscriber/cancelPurchase"
 	"latipe-transaction-service/internal/subscriber/createPurchase"
 	"latipe-transaction-service/pkgs/cache"
 	"latipe-transaction-service/pkgs/db/mongodb"
 	"latipe-transaction-service/pkgs/rabbitclient"
+
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/google/wire"
 )
 
 type Server struct {
@@ -30,6 +30,7 @@ type Server struct {
 	globalCfg         *config.Config
 	purchaseReplySub  *createPurchase.PurchaseReplySubscriber
 	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber
+	purchaseCancelSub *cancelPurchase.PurchaseCancelOrchestratorSubscriber
 	checkTxStatus     *cronjob.CheckingTxStatusCronJ
 }
 
@@ -47,6 +48,10 @@ func (serv Server) PurchaseReplySub() *createPurchase.PurchaseReplySubscriber {
 
 func (serv Server) PurchaseCreateSub() *createPurchase.PurchaseCreateOrchestratorSubscriber {
 	return serv.purchaseCreateSub
+}
+
+func (serv Server) PurchaseCancelSub() *cancelPurchase.PurchaseCancelOrchestratorSubscriber {
+	return serv.purchaseCancelSub
 }
 
 func (serv Server) CheckTxStatusCron() *cronjob.CheckingTxStatusCronJ {
@@ -77,6 +82,7 @@ func NewServer(
 	transRouter router.TransactionRouter,
 	purchaseReplySub *createPurchase.PurchaseReplySubscriber,
 	purchaseCreateSub *createPurchase.PurchaseCreateOrchestratorSubscriber,
+	purchaseCancelSub *cancelPurchase.PurchaseCancelOrchestratorSubscriber,
 	checkTxStatus *cronjob.CheckingTxStatusCronJ) *Server {
 
 	app := fiber.New(fiber.Config{
@@ -112,6 +118,7 @@ func NewServer(
 		app:               app,
 		purchaseReplySub:  purchaseReplySub,
 		purchaseCreateSub: purchaseCreateSub,
+		purchaseCancelSub: purchaseCancelSub,
 		checkTxStatus:     checkTxStatus,
 	}
 }
