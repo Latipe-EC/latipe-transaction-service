@@ -9,6 +9,7 @@ import (
 	"latipe-transaction-service/internal/domain/repos"
 	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
 	redisCache "latipe-transaction-service/pkgs/cache/redis"
+	"strings"
 	"sync"
 	"time"
 )
@@ -52,11 +53,16 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 			{
 				ServiceName: PRODUCT_SERVICE_NAME,
 				TxStatus:    0,
-			}, {
-				ServiceName: PROMOTION_SERVICE_NAME,
-				TxStatus:    0,
 			},
 		}
+
+		if i.Vouchers != "" {
+			txs = append(txs, entities.Commits{
+				ServiceName: PROMOTION_SERVICE_NAME,
+				TxStatus:    0,
+			})
+		}
+
 		dao.Commits = txs
 
 		if err := o.transactionRepo.CreateTransactionData(ctx, &dao); err != nil {
@@ -67,27 +73,6 @@ func (o orderService) StartPurchaseTransaction(ctx context.Context, msg *message
 			continue
 		}
 
-	}
-
-	promotionReq := message.ApplyVoucherMessage{
-		UserId: msg.UserRequest.UserId,
-		CheckoutData: message.CheckoutRequest{
-			CheckoutID: msg.CheckoutMessage.CheckoutID,
-		},
-	}
-
-	for _, i := range msg.OrderDetail {
-		promotionReq.CheckoutData.OrderData = append(promotionReq.CheckoutData.OrderData, message.PromotionOrderData{
-			OrderID: i.OrderID,
-			StoreID: i.StoreID,
-		})
-	}
-
-	promotionReq.Vouchers = []string{msg.PromotionMessage.PaymentVoucher, msg.PromotionMessage.FreeShippingVoucher}
-	promotionReq.Vouchers = append(promotionReq.Vouchers, msg.PromotionMessage.ShopVoucher...)
-
-	if err := o.transactionOrchestrator.PublishPurchasePromotionMessage(&promotionReq); err != nil {
-		return err
 	}
 	log.Infof("purchase transaction is finished [%v]", msg.CheckoutMessage.CheckoutID)
 
@@ -147,6 +132,18 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 			Status:        orderDetail.Status,
 		}
 		return o.transactionOrchestrator.PublishPurchasePaymentMessage(&paymentMsg)
+	})
+
+	go handlerMessageGoroutine(func() error {
+		promotionReq := message.ApplyVoucherMessage{
+			CheckoutID:   msg.CheckoutMessage.CheckoutID,
+			UserID:       msg.UserRequest.UserId,
+			OrderID:      orderDetail.OrderID,
+			VoucherCodes: strings.Split(orderDetail.Vouchers, "-"),
+		}
+
+		return o.transactionOrchestrator.PublishPurchasePromotionMessage(&promotionReq)
+
 	})
 
 	go handlerMessageGoroutine(func() error {
@@ -220,7 +217,7 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 
 			// Update order transaction status and reply purchase message to order
 			// then delete the cache message
-			if count == NUMBER_OF_SERVICES_COMMIT {
+			if count == len(trans.Commits)-1 {
 
 				errChan := make(chan error, 3)
 

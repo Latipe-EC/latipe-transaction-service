@@ -3,11 +3,10 @@ package message
 import "time"
 
 type OrderPendingMessage struct {
-	UserRequest      UserRequest      `json:"user_request,omitempty"`
-	Address          OrderAddress     `json:"address,omitempty" validate:"required"`
-	CheckoutMessage  CheckoutMessage  `json:"checkout_data"`
-	PromotionMessage PromotionMessage `json:"promotion_data"`
-	OrderDetail      []OrderDetail    `json:"order_detail"`
+	UserRequest     UserRequest     `json:"user_request,omitempty"`
+	Address         OrderAddress    `json:"address,omitempty" validate:"required"`
+	CheckoutMessage CheckoutMessage `json:"checkout_data"`
+	OrderDetail     []OrderDetail   `json:"order_detail"`
 }
 type OrderDetail struct {
 	Status           int                 `json:"status"`

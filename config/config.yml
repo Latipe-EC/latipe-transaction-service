@@ -28,7 +28,7 @@ Cache:
     Address: localhost
     Port: 6379
     Password:
-    DB: 0
+    DB: 9
 
 RabbitMQ:
   ServiceName: transaction_service
