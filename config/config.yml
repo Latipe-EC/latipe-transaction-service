@@ -82,10 +82,8 @@ RabbitMQ:
     Queue:
 
   SagaOrderCartEvent:
-    Exchange: rating_exchange
-    CommitRoutingKey: rating_routing_key
-    RollbackRoutingKey: order.delivery.rollback
-    ReplyRoutingKey: order.delivery.reply
+    Exchange: cart_exchange
+    CommitRoutingKey: cart_routing_key
     Queue: internal.rating
 
 
