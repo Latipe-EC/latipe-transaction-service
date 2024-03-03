@@ -135,11 +135,16 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 	})
 
 	go handlerMessageGoroutine(func() error {
+		codes := strings.Split(orderDetail.Vouchers, "-")
+		if codes[0] == "" {
+			codes = nil
+		}
+
 		promotionReq := message.ApplyVoucherMessage{
 			CheckoutID:   msg.CheckoutMessage.CheckoutID,
 			UserID:       msg.UserRequest.UserId,
 			OrderID:      orderDetail.OrderID,
-			VoucherCodes: strings.Split(orderDetail.Vouchers, "-"),
+			VoucherCodes: codes,
 		}
 
 		return o.transactionOrchestrator.PublishPurchasePromotionMessage(&promotionReq)
