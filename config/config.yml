@@ -81,6 +81,13 @@ RabbitMQ:
     ReplyRoutingKey: order.email.reply
     Queue:
 
+  SagaOrderCartEvent:
+    Exchange: rating_exchange
+    CommitRoutingKey: rating_routing_key
+    RollbackRoutingKey: order.delivery.rollback
+    ReplyRoutingKey: order.delivery.reply
+    Queue: internal.rating
+
 
 AdapterService:
   AuthService:

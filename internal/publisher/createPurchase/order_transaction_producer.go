@@ -193,6 +193,33 @@ func (pub *OrderOrchestratorPub) PublishPurchaseEmailMessage(message *message.Em
 	return nil
 }
 
+func (pub *OrderOrchestratorPub) PublishPurchaseCartMessage(message *message.CartMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body, err := ParseOrderToByte(&message)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Send message to queue %v - %v",
+		pub.cfg.RabbitMQ.SagaOrderCartEvent.Exchange,
+		pub.cfg.RabbitMQ.SagaOrderCartEvent.CommitRoutingKey)
+
+	err = pub.channel.PublishWithContext(ctx,
+		pub.cfg.RabbitMQ.SagaOrderCartEvent.Exchange,         // exchange
+		pub.cfg.RabbitMQ.SagaOrderCartEvent.CommitRoutingKey, // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	rabbitclient.FailOnError(err, "Failed to publish a message")
+
+	return nil
+}
+
 func (pub *OrderOrchestratorPub) RollbackPurchaseProductMessage(message *message.RollbackPurchaseMessage) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

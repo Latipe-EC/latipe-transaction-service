@@ -86,7 +86,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 
 	// create a wait group to wait for all goroutines to finish
 	var wg sync.WaitGroup
-	wg.Add(6) // number of goroutines is equal to the number of message types
+	wg.Add(7) // number of goroutines is equal to the number of message types
 
 	// define a function to send messages and handle errors
 	handlerMessageGoroutine := func(fn func() error) {
@@ -101,6 +101,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 		return o.cacheEngine.Set(orderDetail.OrderID, msg, TTL_ORDER_MESSAGE)
 	})
 
+	//publish product message
 	go handlerMessageGoroutine(func() error {
 		// Create and send product message
 		productMsg := message.OrderProductMessage{
@@ -121,6 +122,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 		return o.transactionOrchestrator.PublishPurchaseProductMessage(&productMsg)
 	})
 
+	//publish payment message
 	go handlerMessageGoroutine(func() error {
 		// Create and send payment message
 		paymentMsg := message.PaymentMessage{
@@ -134,6 +136,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 		return o.transactionOrchestrator.PublishPurchasePaymentMessage(&paymentMsg)
 	})
 
+	//publish voucher message
 	go handlerMessageGoroutine(func() error {
 		codes := strings.Split(orderDetail.Vouchers, "-")
 		if codes[0] == "" {
@@ -151,6 +154,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 
 	})
 
+	//publish email message
 	go handlerMessageGoroutine(func() error {
 		// Create and send email message
 		return o.transactionOrchestrator.PublishPurchaseEmailMessage(&message.EmailPurchaseMessage{
@@ -160,6 +164,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 		})
 	})
 
+	//publish delivery message
 	go handlerMessageGoroutine(func() error {
 		// Create and send delivery message
 		deliveryMsg := message.DeliveryMessage{
@@ -175,6 +180,19 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 		deliveryMsg.Address.AddressDetail = msg.Address.AddressDetail
 		deliveryMsg.Address.Phone = msg.Address.Phone
 		return o.transactionOrchestrator.PublishPurchaseDeliveryMessage(&deliveryMsg)
+	})
+
+	//publish cart id message
+	go handlerMessageGoroutine(func() error {
+		if len(orderDetail.CartIds) > 0 {
+			// Create and send delivery message
+			deliveryMsg := message.CartMessage{
+				CartIdVmList: orderDetail.CartIds,
+			}
+
+			return o.transactionOrchestrator.PublishPurchaseCartMessage(&deliveryMsg)
+		}
+		return nil
 	})
 
 	// wait for all goroutines to finish
