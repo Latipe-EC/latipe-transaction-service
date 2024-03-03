@@ -86,7 +86,7 @@ func (o orderService) handlePurchaseTransaction(msg *message.OrderPendingMessage
 
 	// create a wait group to wait for all goroutines to finish
 	var wg sync.WaitGroup
-	wg.Add(5) // number of goroutines is equal to the number of message types
+	wg.Add(6) // number of goroutines is equal to the number of message types
 
 	// define a function to send messages and handle errors
 	handlerMessageGoroutine := func(fn func() error) {
