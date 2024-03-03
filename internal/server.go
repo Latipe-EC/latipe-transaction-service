@@ -5,6 +5,8 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/ansrivas/fiberprometheus/v2"
+	"github.com/gofiber/fiber/v2"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/adapter"
 	"latipe-transaction-service/internal/api/handler"
