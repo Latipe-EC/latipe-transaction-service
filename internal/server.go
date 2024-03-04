@@ -16,6 +16,7 @@ import (
 	"latipe-transaction-service/internal/domain/repos"
 	"latipe-transaction-service/internal/publisher"
 	"latipe-transaction-service/internal/service"
+	"latipe-transaction-service/internal/service/notifyserv"
 	"latipe-transaction-service/internal/subscriber"
 	"latipe-transaction-service/internal/subscriber/cancelPurchase"
 	"latipe-transaction-service/internal/subscriber/createPurchase"
@@ -68,6 +69,7 @@ func New() (*Server, error) {
 		mongodb.Set,
 		rabbitclient.Set,
 		repos.Set,
+		notifyserv.Set,
 		service.Set,
 		adapter.Set,
 		handler.Set,

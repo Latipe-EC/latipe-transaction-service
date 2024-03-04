@@ -19,6 +19,7 @@ type Config struct {
 	AdapterService AdapterService
 	RabbitMQ       RabbitMQ
 	CronJob        CronJob
+	Notify         Notify
 }
 
 type Server struct {
@@ -56,6 +57,11 @@ type CronJob struct {
 
 type DB struct {
 	Mongodb Mongodb
+}
+
+type Notify struct {
+	Token        string
+	GroupAlertID int64
 }
 
 type Mongodb struct {

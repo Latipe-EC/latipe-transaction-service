@@ -112,3 +112,7 @@ AdapterService:
 
 CronJob:
   CheckingTxStatus: "@every 5m"
+
+Notify:
+  Token:
+  GroupAlertID: -4122205761

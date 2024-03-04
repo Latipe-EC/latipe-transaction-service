@@ -19,6 +19,7 @@ import (
 	"latipe-transaction-service/internal/cronjob"
 	"latipe-transaction-service/internal/domain/repos"
 	"latipe-transaction-service/internal/publisher/createPurchase"
+	"latipe-transaction-service/internal/service/notifyserv"
 	"latipe-transaction-service/internal/service/orderserv"
 	"latipe-transaction-service/internal/service/transactionserv"
 	"latipe-transaction-service/internal/subscriber/cancelPurchase"
@@ -51,7 +52,8 @@ func New() (*Server, error) {
 	transactionRouter := router.NewTransactionRouter(transactionApiHandler, authMiddleware)
 	connection := rabbitclient.NewRabbitClientConnection(configConfig)
 	orderOrchestratorPub := createPurchase.NewOrderOrchestratorPub(configConfig, connection)
-	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub, cacheEngine)
+	notifyService := notifyserv.NewTelegramBot(configConfig)
+	orderService := orderserv.NewOrderService(transactionRepository, orderOrchestratorPub, notifyService, cacheEngine)
 	purchaseReplySubscriber := createPurchase2.NewPurchaseSubscriberReply(configConfig, orderService, connection)
 	purchaseCreateOrchestratorSubscriber := createPurchase2.NewPurchaseCreateOrchestratorSubscriber(configConfig, orderService, connection)
 	purchaseCancelOrchestratorSubscriber := cancelPurchase.NewPurchaseCancelOrchestratorSubscriber(configConfig, orderService, connection)

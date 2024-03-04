@@ -8,6 +8,7 @@ import (
 	"latipe-transaction-service/internal/domain/message"
 	"latipe-transaction-service/internal/domain/repos"
 	msgqueue "latipe-transaction-service/internal/publisher/createPurchase"
+	"latipe-transaction-service/internal/service/notifyserv"
 	redisCache "latipe-transaction-service/pkgs/cache/redis"
 	"strings"
 	"sync"
@@ -16,15 +17,18 @@ import (
 
 type orderService struct {
 	transactionRepo         repos.TransactionRepository
+	notifyServ              notifyserv.NotifyService
 	transactionOrchestrator *msgqueue.OrderOrchestratorPub
 	cacheEngine             *redisCache.CacheEngine
 }
 
 func NewOrderService(transRepos repos.TransactionRepository, orchestrator *msgqueue.OrderOrchestratorPub,
+	notifyService notifyserv.NotifyService,
 	cacheEngine *redisCache.CacheEngine) OrderService {
 	return &orderService{
 		transactionRepo:         transRepos,
 		transactionOrchestrator: orchestrator,
+		notifyServ:              notifyService,
 		cacheEngine:             cacheEngine,
 	}
 }
@@ -241,7 +245,6 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 			// Update order transaction status and reply purchase message to order
 			// then delete the cache message
 			if count == len(trans.Commits)-1 {
-
 				errChan := make(chan error, 3)
 
 				var wg sync.WaitGroup
@@ -278,6 +281,12 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 					log.Errorf("committing transaction is failed: %v", err)
 				}
 				log.Infof(" purchase transaction is committed [%v]", msg.OrderID)
+
+				err := o.notifyServ.SendMessageToTelegram(trans, "success")
+				if err != nil {
+					log.Error(err)
+				}
+
 				return nil
 			}
 
@@ -286,10 +295,10 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 				ServiceName: MappingServiceName(serviceType),
 				TxStatus:    entities.TX_FAIL,
 			}
+
 			if err := o.rollbackPurchaseToService(&commit, trans.OrderID); err != nil {
 				return err
 			}
-
 		}
 
 	}
@@ -306,6 +315,13 @@ func (o orderService) HandleTransactionPurchaseReply(ctx context.Context, msg *m
 		}
 
 		trans.TransactionStatus = entities.TX_FAIL
+
+		reason := fmt.Sprintf("Service failed:%s", MappingServiceName(serviceType))
+		err := o.notifyServ.SendMessageToTelegram(trans, reason)
+		if err != nil {
+			log.Error(err)
+		}
+
 		if err := o.transactionRepo.UpdateTransactionStatus(ctx, trans); err != nil {
 			return err
 		}
