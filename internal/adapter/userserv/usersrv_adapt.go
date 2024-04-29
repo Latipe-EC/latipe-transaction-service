@@ -15,7 +15,7 @@ type UserService struct {
 }
 
 func NewUserService(cfg *config.Config) *UserService {
-	restyClient := resty.New().SetDebug(true)
+	restyClient := resty.New().SetDebug(false)
 
 	return &UserService{
 		restyClient: restyClient,
