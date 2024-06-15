@@ -30,50 +30,59 @@ func main() {
 
 func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseCreateSub().ListenPurchaseCreate(wg)
-	}()
+	})
 
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseCancelSub().ListenPurchaseCancel(wg)
-	}()
+	})
 
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseReplySub().ListenProductPurchaseReply(wg)
-	}()
+	})
 
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseReplySub().ListenPromotionPurchaseReply(wg)
-	}()
+	})
 
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseReplySub().ListenPaymentPurchaseReply(wg)
-	}()
+	})
 
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		serv.PurchaseReplySub().ListenDeliveryPurchaseReply(wg)
-	}()
+	})
 }
 
 func startAPIHandler(serv *server.Server, wg *sync.WaitGroup) {
-	defer wg.Done()
-
 	wg.Add(1)
-	go func() {
+	go runWithRecovery(func() {
 		defer wg.Done()
 		if err := serv.App().Listen(serv.Config().Server.RestPort); err != nil {
 			fmt.Printf("%s", err)
 		}
+	})
+}
+
+func runWithRecovery(fn func()) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Debugf("Recovered from panic: %v", r)
+			}
+		}()
+		fn()
 	}()
 }
