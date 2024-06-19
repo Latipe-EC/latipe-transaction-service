@@ -11,6 +11,7 @@ import (
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/adapter/userserv"
 	"latipe-transaction-service/internal/api/handler"
@@ -118,6 +119,9 @@ func NewServer(
 	app.Use(prometheus.Middleware)
 
 	app.Use(logger.New())
+
+	recoverConfig := recover2.ConfigDefault
+	app.Use(recover2.New(recoverConfig))
 
 	app.Get("", func(ctx *fiber.Ctx) error {
 		s := struct {

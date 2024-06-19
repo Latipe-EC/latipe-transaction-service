@@ -9,5 +9,8 @@ RUN cd internal/ && wire
 RUN cd ../
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /build/main ./cmd/main.go
 
-EXPOSE 5005
+
+ENV cfgPath=/config/devConfig
+
+EXPOSE 5020
 ENTRYPOINT ["/build/main"]

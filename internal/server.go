@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
+	recoverFiber "github.com/gofiber/fiber/v2/middleware/recover"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/adapter"
 	"latipe-transaction-service/internal/api/handler"
@@ -102,6 +103,9 @@ func NewServer(
 
 	// Initialize default config
 	app.Use(logger.New())
+
+	recoverConfig := recoverFiber.ConfigDefault
+	app.Use(recoverFiber.New(recoverConfig))
 
 	app.Get("", func(ctx *fiber.Ctx) error {
 		s := struct {

@@ -68,12 +68,12 @@ func startSubscribers(serv *server.Server, wg *sync.WaitGroup) {
 
 func startAPIHandler(serv *server.Server, wg *sync.WaitGroup) {
 	wg.Add(1)
-	go runWithRecovery(func() {
+	go func() {
 		defer wg.Done()
 		if err := serv.App().Listen(serv.Config().Server.RestPort); err != nil {
 			fmt.Printf("%s", err)
 		}
-	})
+	}()
 }
 
 func runWithRecovery(fn func()) {
