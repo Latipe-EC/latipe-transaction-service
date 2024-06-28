@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	recoverFiber "github.com/gofiber/fiber/v2/middleware/recover"
 	"latipe-transaction-service/config"
 	"latipe-transaction-service/internal/adapter"
@@ -97,12 +96,6 @@ func NewServer(
 		JSONDecoder:  json.Unmarshal,
 		JSONEncoder:  json.Marshal,
 	})
-
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://127.0.0.1:5500, http://127.0.0.1:5173, http://localhost:5500, http://localhost:5173",
-		AllowHeaders: "*",
-		AllowMethods: "*",
-	}))
 
 	prometheus := fiberprometheus.New("latipe-order-service-v2")
 	prometheus.RegisterAt(app, "/metrics")
